@@ -1,0 +1,40 @@
+from bolt_expressions import Scoreboard
+from contextlib import contextmanager
+
+merge function_tag minecraft:load {"values": [f'{ctx.project_id}:events/load']}
+merge function_tag minecraft:tick {"values": [f'{ctx.project_id}:events/tick']}
+
+sb_mined_iron_ore = Scoreboard(f'{ctx.project_id}.mined.iron_ore', 'minecraft.mined:minecraft.iron_ore')
+
+append function f'{ctx.project_id}:events/load':
+	...
+
+append function f'{ctx.project_id}:events/tick':
+	# player_tick
+	as @a at @s function f'{ctx.project_id}:events/player_tick'
+
+append function f'{ctx.project_id}:events/player_tick':
+	# mined_iron_ore
+	if score @s sb_mined_iron_ore matches 1..:
+		function f'{ctx.project_id}:events/mined_iron_ore'
+		sb_mined_iron_ore['@s'].reset()
+
+@contextmanager
+def load():
+	append function f'{ctx.project_id}:events/load':
+		yield
+
+@contextmanager
+def tick():
+	append function f'{ctx.project_id}:events/tick':
+		yield
+
+@contextmanager
+def player_tick():
+	append function f'{ctx.project_id}:events/player_tick':
+		yield
+
+@contextmanager
+def mined_iron_ore():
+	append function f'{ctx.project_id}:events/mined_iron_ore':
+		yield

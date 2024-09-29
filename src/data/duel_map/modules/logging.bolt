@@ -1,0 +1,10 @@
+
+def log_chat(type: str, message: str):
+	color = 'gray'
+
+	if type == 'info':
+		color = 'gray'
+	if type == 'error':
+		color = 'red'
+
+	tellraw @a {"text": f'[{type}] {message}', "color": color}

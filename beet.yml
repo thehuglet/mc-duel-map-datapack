@@ -1,0 +1,21 @@
+output: dist
+name: duel_map
+
+require:
+  - bolt
+  - bolt_expressions
+
+data_pack:
+  name: 'Duel Map Datapack'
+  pack_format: 48
+  load: 'src'
+
+pipeline:
+  - mecha
+
+meta:
+  bolt:
+    entrypoint:
+      - '*:events'
+      - '*:generator_blocks'
+      - '*:main'

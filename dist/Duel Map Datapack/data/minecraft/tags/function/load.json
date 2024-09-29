@@ -1,0 +1,6 @@
+{
+  "values": [
+    "duel_map:init_expressions",
+    "duel_map:events/load"
+  ]
+}

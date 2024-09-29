@@ -1,0 +1,28 @@
+from bolt_expressions import Scoreboard
+from ./generators import create_generator
+from ./logging import log_chat
+import ./events as events
+
+create_generator(
+	id='basic_generator',
+	generated_block_id='minecraft:iron_ore',
+	spawn_egg_id='polar_bear_spawn_egg'
+)
+
+with events.load():
+	log_chat('info', 'Loaded!')
+
+	gamerule doTileDrops false
+	gamerule doDaylightCycle false
+	gamerule doWeatherCycle false
+
+with events.tick():
+	handle_spawn_egg_init()
+
+	# Generator respawn block logic
+	as @e[type=marker, tag=GENERATOR_ROOT_TAG] at @s:
+		unless block ~ ~ ~ f'#{ctx.project_id}:generator_spawned_blocks':
+			setblock ~ ~ ~ minecraft:iron_ore
+
+with events.mined_iron_ore():
+	give @s minecraft:iron_ingot
