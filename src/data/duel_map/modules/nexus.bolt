@@ -1,0 +1,160 @@
+from ./teams import Team
+from ./utils import common_bool, store, parse_selector
+from ./logging import log_chat
+import ./events as events
+
+NEXUS_ROOT_TAG = 'pvp.nexus.root'
+NEXUS_TEAM_TAG_PREFIX = 'pvp.nexus.team'
+
+NEXUS_COLOR_OVERLAY_TAG = 'pvp.nexus.color_overlay'
+
+NEXUS_SPINNY_CRYSTAL_A_TAG = 'pvp.nexus.spinny_crystal.a'
+NEXUS_SPINNY_CRYSTAL_B_TAG = 'pvp.nexus.spinny_crystal.b'
+
+NEXUS_SPINNY_CAGE_A_TAG = 'pvp.nexus.spinny_cage.a'
+NEXUS_SPINNY_CAGE_B_TAG = 'pvp.nexus.spinny_cage.b'
+
+NEXUS_BLOCK = 'minecraft:spawner'
+
+def rotate_nexus_spinny_cage_horizontally(team_id: Team, amount: float):
+	nexus_team_tag = get_nexus_tag(team_id)
+
+	as @n[type=block_display, tag=NEXUS_SPINNY_CAGE_A_TAG, tag=nexus_team_tag] at @s:
+		tp @s ~ ~ ~ ~amount ~
+	as @n[type=block_display, tag=NEXUS_SPINNY_CAGE_B_TAG, tag=nexus_team_tag] at @s
+		tp @s ~ ~ ~ ~amount ~
+
+def rotate_nexus_crystals_horizontally(team_id: Team, amount: float):
+	nexus_team_tag = get_nexus_tag(team_id)
+
+	as @n[type=block_display, tag=NEXUS_SPINNY_CRYSTAL_A_TAG, tag=nexus_team_tag] at @s:
+		tp @s ~ ~ ~ ~amount ~
+	as @n[type=block_display, tag=NEXUS_SPINNY_CRYSTAL_B_TAG, tag=nexus_team_tag] at @s
+		tp @s ~ ~ ~ ~-amount ~
+
+def get_nexus_selector(team_id: Team):
+	nexus_team_tag = get_nexus_tag(team_id)
+	return parse_selector(f'@n[type=marker, tag={NEXUS_ROOT_TAG}, tag={nexus_team_tag}]')
+
+def get_closest_nexus_selector():
+	return parse_selector(f'@n[type=marker, tag={NEXUS_ROOT_TAG}]')
+
+def get_nexus_tag(team_id: Team):
+	return f'{NEXUS_TEAM_TAG_PREFIX}.{team_id}'
+
+def spawn_nexus(team_id: Team):
+	nexus_team_tag = get_nexus_tag(team_id)
+
+	team_color_id = 'black'		# default fallback
+	if team_id == Team.RED:
+		team_color_id = 'red'
+	elif team_id == Team.BLUE:
+		team_color_id = 'blue'
+
+	# This team's nexus exists -> Kill previous one
+	if entity @e[type=marker, tag=NEXUS_ROOT_TAG, tag=nexus_team_tag]:
+		destroy_nexus(team_id)
+
+	# Root marker
+	summon minecraft:marker ~ ~ ~ {
+		CustomName: f'{{"color": "{team_color_id}", "text": "nexus_root"}}',
+		Tags: [
+			NEXUS_ROOT_TAG,
+			nexus_team_tag
+		]
+	}
+
+	# Mineable block
+	setblock ~ ~ ~ NEXUS_BLOCK
+
+	# Color overlay
+	color_overlay_block_id = 'minecraft:black_stained_glass'		# default fallback
+	if team_id == Team.RED:
+		color_overlay_block_id = 'minecraft:red_stained_glass'
+	elif team_id == Team.BLUE:
+		color_overlay_block_id = 'minecraft:blue_stained_glass'
+
+	summon minecraft:block_display ~ ~0.5 ~ {
+		CustomName: f'{{"color": "{team_color_id}", "text": "nexus_color_overlay"}}',
+		Tags: [
+			NEXUS_COLOR_OVERLAY_TAG,
+			nexus_team_tag
+		],
+		block_state: {
+			Name: color_overlay_block_id
+		},
+		transformation: {
+			translation: [-0.500005f, -0.500005f, -0.500005f],
+			left_rotation: [0f, 0f, 0f, 1f],
+			scale: [1.0001f, 1.0001f, 1.0001f],
+			right_rotation: [0f, 0f, 0f, 1f]
+		},
+		teleport_duration: 4
+	}
+
+	# Spinny crystal
+	spinny_crystal_block_id = 'minecraft:black_concrete'		# default fallback
+	if team_id == Team.RED:
+		spinny_crystal_block_id = 'minecraft:red_concrete'
+	elif team_id == Team.BLUE:
+		spinny_crystal_block_id = 'minecraft:blue_concrete'
+
+	for i in range(2):
+		crystal_tag = [NEXUS_SPINNY_CRYSTAL_A_TAG, NEXUS_SPINNY_CRYSTAL_B_TAG][i]
+		y_offset = [0.5, 0.500001][i]
+
+		summon minecraft:block_display ~ ~y_offset ~ {
+			CustomName: f'{{"color": "{team_color_id}", "text": "nexus_spinny_crystal"}}',
+			Tags: [
+				crystal_tag,
+				nexus_team_tag
+			],
+			block_state: {
+				Name: spinny_crystal_block_id
+			},
+			transformation: {
+				translation: [-0.25f, -0.25f, -0.25f],
+				left_rotation: [0f, 0f, 0f, 1f],
+				scale: [0.5f, 0.5f, 0.5f],
+				right_rotation: [0f, 0f, 0f, 1f]
+			},
+			teleport_duration: 4
+		}
+
+	# Spinny cage
+	for i in range(2):
+		spinny_cage_tag = [NEXUS_SPINNY_CAGE_A_TAG, NEXUS_SPINNY_CAGE_B_TAG][i]
+		y_offset = [0.5001, 0.50001][i]
+
+		summon minecraft:block_display ~ ~y_offset ~ {
+			CustomName: f'{{"color": "{team_color_id}", "text": "nexus_spinny_cage"}}',
+			Tags: [
+				spinny_cage_tag,
+				nexus_team_tag
+			],
+			block_state: {
+				Name: NEXUS_BLOCK
+			},
+			transformation: {
+				translation: [-0.5f, -0.5f, -0.5f],
+				left_rotation: [0f, 0f, 0f, 1f],
+				scale: [1.0f, 1.0f, 1.0f],
+				right_rotation: [0f, 0f, 0f, 1f]
+			},
+			teleport_duration: 4
+		}
+	
+	as @n[type=block_display, tag=NEXUS_SPINNY_CAGE_B_TAG, tag=nexus_team_tag] at @s:
+		tp @s ~ ~ ~ ~45.0 ~
+
+def destroy_nexus(team_id: Team):
+	nexus_team_tag = get_nexus_tag(team_id)
+
+	as @e[type=marker, tag=NEXUS_ROOT_TAG, tag=nexus_team_tag] at @s:
+		setblock ~ ~ ~ minecraft:air destroy
+		kill @n[type=block_display, tag=NEXUS_COLOR_OVERLAY_TAG, tag=nexus_team_tag]
+		kill @n[type=block_display, tag=NEXUS_SPINNY_CRYSTAL_A_TAG, tag=nexus_team_tag]
+		kill @n[type=block_display, tag=NEXUS_SPINNY_CRYSTAL_B_TAG, tag=nexus_team_tag]
+		kill @n[type=block_display, tag=NEXUS_SPINNY_CAGE_A_TAG, tag=nexus_team_tag]
+		kill @n[type=block_display, tag=NEXUS_SPINNY_CAGE_B_TAG, tag=nexus_team_tag]
+		kill @s

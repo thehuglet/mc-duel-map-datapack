@@ -1,13 +1,22 @@
 from bolt_expressions import Scoreboard
-from ./generators import create_generator
+from ./dev_spawn_egg import register_dev_spawn_egg
+from ./nexus import spawn_nexus, get_nexus_selector, NEXUS_BLOCK, destroy_nexus,
+					get_nexus_tag, get_closest_nexus_selector, rotate_nexus_crystals_horizontally,
+					rotate_nexus_spinny_cage_horizontally
+from ./teams import Team
 from ./logging import log_chat
+from ./utils import store
 import ./events as events
 
-create_generator(
-	id='basic_generator',
-	generated_block_id='minecraft:iron_ore',
-	spawn_egg_id='polar_bear_spawn_egg'
-)
+def spawn_red_nexus():
+	spawn_nexus(Team.RED)
+
+def spawn_blue_nexus():
+	spawn_nexus(Team.BLUE)
+
+# [API] dev:give/dev_spawn_egg/{id}
+register_dev_spawn_egg(id='spawn_red_nexus', spawn_egg_id='minecraft:strider_spawn_egg', on_use_callback=spawn_red_nexus)
+register_dev_spawn_egg(id='spawn_blue_nexus', spawn_egg_id='minecraft:allay_spawn_egg', on_use_callback=spawn_blue_nexus)
 
 with events.load():
 	log_chat('info', 'Loaded!')
@@ -17,12 +26,30 @@ with events.load():
 	gamerule doWeatherCycle false
 
 with events.tick():
-	handle_spawn_egg_init()
+	teams = [Team.RED, Team.BLUE]
 
-	# Generator respawn block logic
-	as @e[type=marker, tag=GENERATOR_ROOT_TAG] at @s:
-		unless block ~ ~ ~ f'#{ctx.project_id}:generator_spawned_blocks':
-			setblock ~ ~ ~ minecraft:iron_ore
+	for team_id in teams:
+		# Nexus stuff
+		as get_nexus_selector(team_id) at @s:
+			# This prevents accidental right-clicks on
+			# the spawner with eggs during development
+			data modify block ~ ~ ~ SpawnData.entity set value {}
+
+			unless block ~ ~ ~ NEXUS_BLOCK:
+				log_chat('info', f'Nexus destroyed ({get_nexus_tag(team_id)})')
+				destroy_nexus(team_id)
+
+			rotate_nexus_crystals_horizontally(team_id, 3.5)
+			rotate_nexus_spinny_cage_horizontally(team_id, 3.5)
+
+			# Particle VFX
+			if team_id == Team.RED:
+				particle_color = [1.000, 0.000, 0.000]
+			elif team_id == Team.BLUE:
+				particle_color = [0.000, 0.000, 1.000]
+	
+			particle dust{color: particle_color, scale: 1} ~ ~0.5 ~ 0.25 0.25 0.25 1.0 2 normal @a
+			# particle falling_dust{block_state: "minecraft:red_concrete"} ~ ~0.5 ~ 0.3 0.3 0.3 1.0 0 normal @a
 
 with events.mined_iron_ore():
 	give @s minecraft:iron_ingot
