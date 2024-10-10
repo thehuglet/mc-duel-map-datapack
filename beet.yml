@@ -15,7 +15,8 @@ pipeline:
 
 meta:
   bolt:
+    prelude:
+      - 'tools:prelude'
     entrypoint:
-      - '*:events'
-      - '*:generator_blocks'
-      - '*:main'
+      - 'pvp:main'
+    

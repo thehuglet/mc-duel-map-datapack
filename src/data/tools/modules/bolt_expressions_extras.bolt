@@ -1,25 +1,13 @@
-from bolt_expressions import Scoreboard, ExpressionNode, ScoreSource, DataSource
+from bolt_expressions import Data, ExpressionNode, ScoreSource, DataSource
 from contextlib import contextmanager
 from mecha import Mecha
 
 mc = ctx.inject(Mecha)
 
-common_bool = Scoreboard('pvp.common', 'dummy')['$common_bool']
+this = Data.entity('@s')
 
-def parse_selector(value: str):
-    return mc.parse(value, using='selector')
-
-def snake_to_title_case(snake_str: str):
-	words = snake_str.split('_')
-	capitalized_words = []
-	
-	for word in words:
-		capitalized_words.append(word.capitalize())
-	
-	return ''.join(capitalized_words)
-
-def parse_holder(holder: str):
-	return mc.parse(holder, using="score_holder", provide={"properties":{"amount":"single"}})
+def score_exists(score: ScoreSource) -> ScoreSource:
+	return score == score
 
 @contextmanager
 def store(expression: ExpressionNode, mode='result', type='int', scale=1.0):
@@ -153,3 +141,6 @@ def store(expression: ExpressionNode, mode='result', type='int', scale=1.0):
 				elif type == 'short':
 					store success block expression._target expression._path short scale:
 						yield True
+
+def parse_holder(holder: str):
+	return mc.parse(holder, using="score_holder", provide={"properties":{"amount":"single"}})

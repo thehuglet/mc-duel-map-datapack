@@ -1,0 +1,26 @@
+from bolt_expressions import DataSource, Data, Scoreboard, ExpressionNode
+
+class CardinalDirection:
+	EAST = 'east'
+	NORTH = 'north'
+	SOUTH = 'south'
+	WEST = 'west'
+
+def angle_to_cardinal_direction(angle_deg_float: ExpressionNode) -> DataSource:
+	sb = Scoreboard('tools.cardinal_directions', 'dummy')
+	return_value_pointer = Data.storage('tools:cardinal_directions').return_value
+
+	sb['$angle_in'] = angle_deg_float
+
+	if sb['$angle_in'] >= -135 and sb['$angle_in'] < -45:
+		return_value_pointer = CardinalDirection.EAST
+	elif sb['$angle_in'] >= -45 and sb['$angle_in'] < 45:
+		return_value_pointer = CardinalDirection.SOUTH
+	elif sb['$angle_in'] >= 45 and sb['$angle_in'] < 135:
+		return_value_pointer = CardinalDirection.WEST
+	else:
+		# North has some fuckery wrap around (135..-135)
+		# but this is the last option so just 'else' it
+		return_value_pointer = CardinalDirection.NORTH
+
+	return return_value_pointer

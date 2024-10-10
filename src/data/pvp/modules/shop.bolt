@@ -1,0 +1,60 @@
+from mecha import AstSelector
+from bolt_expressions import Scoreboard, Data, DataSource, ExpressionNode
+# from pvp:teams import Team
+# import pvp:items as items
+import pvp:shop_items as shop_items
+from tools:ender_chest import set_ec_slot, clear_all_ec_slots
+
+SHOP_ROOT_TAG = 'pvp.shop.root'
+# def set_shop_item_lore(buy_cost: int | ExpressionNode):
+# 	sb_temp = Scoreboard('pvp.temp')
+# 	sb_temp['#temp'] = buy_cost
+
+# 	item_modifier pvp:shop/set_shop_item_lore {
+# 		"function": "minecraft:set_lore",
+# 		"entity": "this",
+# 		"lore": [
+# 			{
+# 				"text": "⛀ ",
+# 				"color": "gold",
+# 				"italic": false,
+# 				"extra": [
+# 					{
+# 						"score": {
+# 							"name": "#temp",
+# 							"objective": "pvp.temp"
+# 						},
+# 						"color": "gold",
+# 						"italic": false
+# 					}
+# 				]
+# 			}
+# 		],
+# 		"mode": "replace_all"
+# 	}
+
+# 	# TODO: fix this shit
+# 	item modify entity @p weapon.mainhand pvp:shop/set_shop_item_lore
+
+	
+
+def update_user_shop():
+	clear_all_ec_slots()
+
+	# TODO: remove this shit
+	# set_shop_item_lore(69)
+	# set_ec_slot(13, shop_items.Swords.STONE_SWORD, 1)
+
+def spawn_shop(facing_direction: DataSource):
+	# Shop root
+	summon minecraft:marker ~ ~ ~ {
+		CustomName: f'{{"color": "light_purple", "text": "Shop"}}',
+		Tags: [SHOP_ROOT_TAG]
+	}
+
+	# Chest block
+	with var Data.cast({direction: facing_direction}):
+		$setblock ~ ~ ~ minecraft:ender_chest[facing=$(direction)]
+
+def get_shop_selector() -> AstSelector:
+	return selector(f'@e[type=marker, tag={SHOP_ROOT_TAG}]')

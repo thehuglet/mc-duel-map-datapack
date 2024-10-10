@@ -1,0 +1,11 @@
+
+
+ENDER_CHEST_SLOT_COUNT = 27
+
+def set_ec_slot(slot: int, item: str, count: int = 1):
+	raw f'item replace entity @s enderchest.{slot} with {item} {count}'
+
+def clear_all_ec_slots():
+	execute function tools:ender_chest/clear_all_slots:
+		for i in range(ENDER_CHEST_SLOT_COUNT):
+			raw f'item replace entity @s enderchest.{i} with minecraft:air'

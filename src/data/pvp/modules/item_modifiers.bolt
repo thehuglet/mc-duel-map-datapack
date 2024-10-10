@@ -1,0 +1,60 @@
+from dataclasses import dataclass
+from typing import ClassVar
+
+@dataclass
+class _ItemModifier:
+	modifier_contents: dict
+
+	path: str = ''
+	index: int = -1
+
+	global_index: ClassVar[int] = 0
+	ITEM_MODIFIERS_DIR: ClassVar[str] = 'pvp:items'
+
+	def __post_init__(self):
+		self.index = self.global_index
+		self.increment_global_index()
+
+		self.path = f'{self.ITEM_MODIFIERS_DIR}/modifier_{self.index}'
+		item_modifier self.path self.modifier_contents
+
+	@classmethod
+	def increment_global_index(cls):
+		cls.global_index += 1
+
+class ItemModifier:
+	ITEM_BASE = _ItemModifier(
+		[
+			{
+				"function": "minecraft:set_components",
+				"components": {
+					"minecraft:unbreakable": {
+						"show_in_tooltip": false
+					}
+				}
+			},
+			{
+				"function": "minecraft:toggle_tooltips",
+				"toggles": {
+					"minecraft:attribute_modifiers": false,
+					"minecraft:dyed_color": false
+				}
+			}
+		]
+	)
+	PICKAXE_BASE = _ItemModifier(
+		[
+			{
+				"function": "minecraft:set_components",
+				"components": {
+					"minecraft:can_break": {
+						"blocks": [
+							"minecraft:spawner",
+							"minecraft:red_concrete",
+							"minecraft:blue_concrete"
+						]
+					}
+				}
+			}
+		]
+	)

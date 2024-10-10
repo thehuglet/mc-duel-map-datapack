@@ -1,0 +1,6 @@
+from mecha import Mecha, AstSelector
+
+mc = ctx.inject(Mecha)
+
+def selector(value: str) -> AstSelector:
+    return mc.parse(value, using='selector')

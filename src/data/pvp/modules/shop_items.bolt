@@ -1,0 +1,4 @@
+
+
+# class UpgradeSword:
+# 	UPGRADE_TO_STONE_SWORD = r'stone_sword[custom_name='[{"color":"gray","text":"Upgrade to "},{"color":"white","text":"Stone Sword"}]',unbreakable={show_in_tooltip:false},hide_additional_tooltip={},attribute_modifiers={modifiers:[],show_in_tooltip:false}]'

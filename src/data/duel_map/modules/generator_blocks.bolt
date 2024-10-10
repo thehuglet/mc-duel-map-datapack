@@ -1,8 +1,0 @@
-
-GENERATOR_POSSIBLE_BLOCKS_TAG_PATH = f'{ctx.project_id}:generator_spawned_blocks'
-
-merge block_tag GENERATOR_POSSIBLE_BLOCKS_TAG_PATH {
-	"values": [
-		"minecraft:iron_ore"
-	]
-}

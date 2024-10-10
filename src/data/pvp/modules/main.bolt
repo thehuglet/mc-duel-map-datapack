@@ -1,0 +1,87 @@
+from bolt_expressions import Scoreboard, Data
+from tools:logger import initialize_logger,log_chat, LogLevel
+from tools:dev_spawn_egg import register_dev_spawn_egg
+from tools:cardinal_directions import angle_to_cardinal_direction
+from tools:util_shulker import initialize_util_shulker
+from tools:yaml import load_yaml
+from pvp:teams import Team, initialize_team, join_team
+from pvp:nexus import spawn_nexus, update_nexus, get_nexus_selector
+from pvp:shop import spawn_shop, update_user_shop, get_shop_selector
+from pvp:kits import load_kits, give_kit
+from pvp:maps import load_maps
+from pvp:game_session import start_game_session, end_game_session
+import pvp:map_markers as map_markers
+
+def assign_map_marker_team_red():
+	map_markers.assign_team_to_closest_marker(Team.RED)
+
+def assign_map_marker_team_blue():
+	map_markers.assign_team_to_closest_marker(Team.BLUE)
+
+def spawn_red_nexus():
+	spawn_nexus(Team.RED)
+
+def spawn_blue_nexus():
+	spawn_nexus(Team.BLUE)
+
+def spawn_shop_facing_direction():
+	sb_temp = Scoreboard('pvp.temp', 'dummy')
+	temp_data = Data.storage('pvp:temp')
+
+	as @p at @s:
+		summon marker ~ ~ ~:
+			rotated as @p tp @s ~ ~ ~ ~180 ~
+			sb_temp['#inverted_rotation'] = Data.entity('@s').Rotation[0] * 1000
+			temp_data.facing_angle = Data.cast(sb_temp['#inverted_rotation'], 'float') / 1000
+			kill @s
+
+	spawn_shop(angle_to_cardinal_direction(temp_data.facing_angle))
+
+# [API] dev:give/dev_spawn_egg/{id}
+register_dev_spawn_egg(id='spawn_red_nexus', 				spawn_egg_id='strider_spawn_egg', 		callback=spawn_red_nexus)
+register_dev_spawn_egg(id='spawn_blue_nexus', 				spawn_egg_id='allay_spawn_egg', 		callback=spawn_blue_nexus)
+# register_dev_spawn_egg(id='spawn_shop', 					spawn_egg_id='breeze_spawn_egg', 		callback=spawn_shop_facing_direction)
+
+register_dev_spawn_egg(id='assign_map_marker_team_red', 	spawn_egg_id='strider_spawn_egg',		callback=assign_map_marker_team_red)
+register_dev_spawn_egg(id='assign_map_marker_team_blue', 	spawn_egg_id='allay_spawn_egg',			callback=assign_map_marker_team_blue)
+
+register_dev_spawn_egg(id='spawn_map_marker_generator', 	spawn_egg_id='iron_golem_spawn_egg', 	callback=map_markers.spawn_marker_generator)
+register_dev_spawn_egg(id='spawn_map_marker_inhibitor', 	spawn_egg_id='axolotl_spawn_egg', 		callback=map_markers.spawn_marker_inhibitor)
+register_dev_spawn_egg(id='spawn_map_marker_nexus', 		spawn_egg_id='shulker_spawn_egg', 		callback=map_markers.spawn_marker_nexus)
+register_dev_spawn_egg(id='spawn_map_marker_shop',	 		spawn_egg_id='enderman_spawn_egg', 		callback=map_markers.spawn_marker_shop)
+
+with event_load():
+	# initialize_logger()
+	initialize_util_shulker(0, 0, 0)
+
+	initialize_team(Team.RED)
+	initialize_team(Team.BLUE)
+
+	gamerule commandBlockOutput false
+	gamerule doTileDrops false
+	gamerule doDaylightCycle false
+	gamerule doWeatherCycle false
+	gamerule doMobSpawning false
+	gamerule doPatrolSpawning false
+	gamerule doTraderSpawning false
+
+	log_chat(LogLevel.INFO, 'Loaded!')
+
+	load_kits(load_yaml('config/kits.yml'))
+	load_maps(load_yaml('config/maps.yml'))
+
+	function dev:test_start_game:
+		start_game_session(map_id='DEV_TEST')
+
+	function dev:test_end_game:
+		end_game_session(map_id='DEV_TEST')
+
+with event_tick():
+	for team_id in [Team.RED, Team.BLUE]:
+		as get_nexus_selector(team_id) at @s:
+			update_nexus(team_id)
+
+with event_player_tick():
+	as get_shop_selector() at @s as @a[distance=..10] at @s:
+		update_user_shop()
+
