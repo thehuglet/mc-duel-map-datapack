@@ -25,9 +25,7 @@ def despawn_nexus(selector_: str):
 			# log_chat(LogLevel.INFO, 'despawned nexus child', '@s')
 			kill @s
 		
-		breakpoint()
 		kill @s
-		breakpoint()
 
 def spawn_nexus(team_: Team):
 	team_color_id = TEAM_COLOR_IDS[team_]
