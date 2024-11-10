@@ -1,0 +1,91 @@
+shop_data:
+  global_pattern_data:
+    H:
+      item: |
+        barrier[custom_name='{"color":"light_purple","italic":false,"text":"Go Back"}']
+      item_count: 1
+      action_id: 'set_page_home'
+
+  page_data:
+    HOME:
+      slots_pattern: |
+        _ _ _ _ _ _ _ _ _
+        _ _ G O R B C _ _
+        _ _ _ _ _ _ _ _ _
+
+      slots_pattern_data:
+        G:
+          item: |
+            enchanted_book[custom_name='{"color":"light_purple","italic":false,"text":"Gear Upgrades"}',rarity="common",enchantment_glint_override=false]
+          item_count: 1
+          action_id: 'set_page_gear_upgrades'
+        O:
+          item: |
+            iron_sword[custom_name='{"color":"light_purple","italic":false,"text":"One-Time Gear"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          action_id: 'set_page_one_time_gear'
+        R:
+          item: |
+            iron_ingot[custom_name='{"color":"light_purple","italic":false,"text":"Resource Upgrades"}']
+          item_count: 1
+          action_id: 'set_page_resource_upgrades'
+        B:
+          item: |
+            <TEAM_COLOR>_concrete[custom_name='{"color":"light_purple","italic":false,"text":"Blocks"}']
+          item_count: 1
+          action_id: 'set_page_blocks'
+        C:
+          item: |
+            potion[potion_contents={potion:"minecraft:healing"},hide_additional_tooltip={},custom_name='{"color":"light_purple","italic":false,"text":"Consumables"}']
+          item_count: 1
+          action_id: 'set_page_consumables'
+
+    GEAR_UPGRADES:
+      slots_pattern: |
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ H
+
+    ONE_TIME_GEAR:
+      slots_pattern: |
+        S I _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ H
+
+      slots_pattern_data:
+        S:
+          item: |
+            stone_sword[custom_name='{"color":"white","italic":false,"text":"Stone Sword"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          action_id: 'buy_one_time_stone_sword'
+        I:
+          item: |
+            iron_sword[custom_name='{"color":"white","italic":false,"text":"Iron Sword"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          action_id: 'buy_one_time_iron_sword'
+
+    RESOURCE_UPGRADES:
+      slots_pattern: |
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ H
+
+    BLOCKS:
+      slots_pattern: |
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ H
+
+    CONSUMABLES:
+      slots_pattern: |
+        _ _ _ _ _ _ _ _ _
+        _ M _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ H
+
+      slots_pattern_data:
+        M:
+          item: |
+            red_mushroom[custom_name='[{"color":"white","italic":false,"text":"Buy "},{"color":"green","italic":false,"text":"Cute Mushroom"}]',enchantment_glint_override=1b]
+          item_count: 42
+          action_id: 'buy_cute_mushroom'
+

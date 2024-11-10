@@ -1,0 +1,24 @@
+
+
+class Enum:
+	@classmethod
+	def iterate(cls) -> list:
+		for name in dir(cls):
+			if not name.startswith('__') and not callable(getattr(cls, name)):
+				yield getattr(cls, name)
+
+	@classmethod
+	def has_value(cls, value) -> bool:
+		for name in dir(cls):
+			if not name.startswith("__") and not callable(getattr(cls, name)):
+				if getattr(cls, name) == value:
+					return True
+		return False
+
+	@classmethod
+	def get_name(cls, value) -> str:
+		for name in dir(cls):
+			if not name.startswith("__") and not callable(getattr(cls, name)):
+				if getattr(cls, name) == value:
+					return name
+		raise ValueError(f"{value} is not a valid enum value")

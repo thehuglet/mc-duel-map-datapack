@@ -1,4 +1,6 @@
-class MCColor:
+
+
+class MinecraftColorID(Enum):
 	AQUA = 'aqua'
 	BLACK = 'black'
 	BLUE = 'blue'

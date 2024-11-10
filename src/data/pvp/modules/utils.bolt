@@ -1,0 +1,38 @@
+from nbtlib import Byte
+from pvp:teams import Team
+
+def default_block_display_data(
+	block_id: str,
+	scale: float,
+	translation_offset=[0.0, 0.0, 0.0],
+	name_color: str = 'white'
+) -> dict:
+	translation = -0.5 - ((scale - 1) / 2)
+
+	return {
+		'CustomName': f'{{"color": "{name_color}", "text": ""}}',
+		'block_state': {'Name': block_id},
+		'transformation': {
+			'translation': [
+				translation+translation_offset[0],
+				translation+translation_offset[1],
+				translation+translation_offset[2]
+			],
+			'left_rotation': [0.0, 0.0, 0.0, 1.0],
+			'scale': [scale, scale, scale],
+			'right_rotation': [0.0, 0.0, 0.0, 1.0]
+		},
+		'teleport_duration': 4
+	}
+
+def default_game_object_text_display(
+	text: str,
+	color: str = 'white'
+) -> dict:
+	return {
+		'billboard': 'center',
+		'see_through': Byte(1),
+		'text': f'[{{"text": "[", "color": "gray"}}, \
+			{{"text": " {text} ", "color": "{color}"}}, \
+			{{"text": "]", "color": "gray"}}]'
+	}

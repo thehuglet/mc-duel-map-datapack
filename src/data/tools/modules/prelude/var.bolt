@@ -1,0 +1,33 @@
+from bolt_expressions import ScoreSource, DataSource
+from typing import Any
+from ./temp import temp_scoreboard, temp_storage
+
+_score_var_index = 0
+_data_var_index = 0
+
+def score_var(value: Any | None = None) -> ScoreSource:
+	global _score_var_index
+
+	index = _score_var_index
+	_score_var_index += 1
+
+	fake_player_name = f'$tools.var.{index}'
+	source = temp_scoreboard[fake_player_name]
+
+	if value is not None:
+		source = value
+
+	return source
+
+def data_var(value: Any | None = None) -> DataSource:
+	global _data_var_index
+
+	index = _data_var_index
+	_data_var_index += 1
+
+	source = temp_storage['tools']['var'][str(index)]
+	
+	if value is not None:
+		source = value
+
+	return source

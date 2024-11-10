@@ -1,0 +1,64 @@
+from bolt_expressions import Scoreboard
+from pvp:teams import Team, generate_team_object_tag, TEAM_COLOR_IDS
+from pvp:utils import default_game_object_text_display, default_block_display_data
+from pvp:collectable_coin import spawn_coin, CoinType
+from tools:entity_link import link_entities, get_children_entities
+
+GENERATOR_ROOT_TAG = 'pvp.generator.generator_root'
+GENERATOR_ROOT_ENTITY = 'minecraft:marker'
+GENERATOR_SPINNY_BLOCKDISPLAY_TAG = 'pvp.generator.generator_spinny_blockdisplay'
+
+GENERATOR_SPAWN_INTERVAL = 60
+
+spawn_timer_scoreboard = Scoreboard('pvp.generator.spawn_timer', 'dummy')
+
+def update_generators(team_: Team):
+	as @e[type=GENERATOR_ROOT_ENTITY, tag=GENERATOR_ROOT_TAG, tag=generate_team_object_tag(team_)] at @s:
+		# Spinny block VFX
+		as selector(get_children_entities('@s')) if entity @s[tag=GENERATOR_SPINNY_BLOCKDISPLAY_TAG] at @s:
+			raw f'rotate @s ~3 ~'
+
+		# Item generation
+		if not score_exists(spawn_timer_scoreboard['@s']):
+			spawn_timer_scoreboard['@s'] = GENERATOR_SPAWN_INTERVAL
+		
+		if spawn_timer_scoreboard['@s'] == 0:
+			positioned ~ ~1.2 ~:
+				spawn_coin(CoinType.SMALL_COIN)
+			spawn_timer_scoreboard['@s'] = GENERATOR_SPAWN_INTERVAL
+
+		spawn_timer_scoreboard['@s'] -= 1
+
+def despawn_generator(selector_: str):
+	as selector(selector_) at @s:
+		as selector(get_children_entities('@s')):
+			# log_chat(LogLevel.INFO, 'despawned generator child', '@s')
+			kill @s
+		kill @s
+
+def spawn_generator(team_: Team):
+	team_color_id = TEAM_COLOR_IDS[team_]
+	temp_link_helper_tag = 'pvp.generator.link_parent'
+
+	summon GENERATOR_ROOT_ENTITY ~ ~ ~ {
+		Tags: [
+			GENERATOR_ROOT_TAG,
+			generate_team_object_tag(team_),
+			temp_link_helper_tag
+		],
+		CustomName: f'{{"color": "{team_color_id}", "text": "Generator"}}'
+	}
+
+	summon block_display ~ ~1.7 ~ default_block_display_data('iron_block', scale=0.5):
+		tag @s add generate_team_object_tag(team_)
+		tag @s add GENERATOR_SPINNY_BLOCKDISPLAY_TAG
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	summon text_display ~ ~2.3 ~ default_game_object_text_display('Generator', team_color_id):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	tag @n[tag=temp_link_helper_tag] remove temp_link_helper_tag
+
+
+

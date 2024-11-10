@@ -1,0 +1,18 @@
+from bolt_expressions import ScoreSource
+
+ENDER_CHEST_MAX_SLOT_INDEX = 27
+
+def ec_set_item(slot: int, item: str, count: int = 1):
+	raw f'item replace entity @s enderchest.{slot} with {item} {count}'
+
+def ec_clear_all_items():
+	execute function tools:ec/clear_all_slots:
+		for i in range(ENDER_CHEST_MAX_SLOT_INDEX):
+			raw f'item replace entity @s enderchest.{i} with minecraft:air'
+
+def ec_set_from_container(container_pos: str | list[str]) -> ScoreSource:
+	for i in range(ENDER_CHEST_MAX_SLOT_INDEX):
+		if isinstance(container_pos, str):
+			raw f'item replace entity @s enderchest.{i} from block {container_pos} container.{i}'
+		elif isinstance(container_pos, list):
+			raw f'item replace entity @s enderchest.{i} from block {container_pos[0]} {container_pos[1]} {container_pos[2]} container.{i}'

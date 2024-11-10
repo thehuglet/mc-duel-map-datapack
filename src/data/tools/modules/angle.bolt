@@ -1,0 +1,67 @@
+from bolt_expressions import Data, Scoreboard, ScoreSource, DataSource, ExpressionNode
+from nbtlib import Float
+
+class CardinalDirection(Enum):
+	EAST = 'east'
+	NORTH = 'north'
+	SOUTH = 'south'
+	WEST = 'west'
+
+def offset_angle(angle_deg: ExpressionNode, offset_deg_amount: int | float) -> ScoreSource | DataSource:
+	angle = data_var(angle_deg)
+	return_var = data_var()
+	
+	summon marker ~ ~ ~:
+		with var Data.cast({angle_arg: angle}):
+			$execute rotated $(angle_arg) 0 run tp @s ~ ~ ~ ~$(offset_deg_amount) ~
+			
+		return_var = this.Rotation[0]
+		kill @s
+
+	if isinstance(angle_deg, ScoreSource):
+		return score_var(return_var)
+	return return_var
+
+def snap_angle_to_cardinal_direction(angle_deg: ExpressionNode) -> ScoreSource | DataSource:
+	return_var = data_var(cardinal_direction_to_angle(angle_to_cardinal_direction(angle_deg)))
+
+	if isinstance(angle_deg, ScoreSource):
+		return score_var(return_var)
+	return return_var
+
+def cardinal_direction_to_angle(cardinal_direction: str | DataSource) -> ScoreSource | DataSource:
+	cardinal_direction = data_var(cardinal_direction)
+	return_var = data_var()
+
+	if cardinal_direction == CardinalDirection.EAST:
+		return_var = Float(-90.0)
+	elif cardinal_direction == CardinalDirection.SOUTH:
+		return_var = Float(0.0)
+	elif cardinal_direction == CardinalDirection.WEST:
+		return_var = Float(90.0)
+	elif cardinal_direction == CardinalDirection.NORTH:
+		return_var = Float(-180.0)
+
+	if isinstance(cardinal_direction, ScoreSource):
+		return score_var(return_var)
+	return return_var
+
+def angle_to_cardinal_direction(angle_deg: ExpressionNode) -> DataSource:
+	return_value = data_var()
+	angle = score_var()
+
+	angle = angle_deg
+
+	if angle >= -135 and angle < -45:
+		return_value = CardinalDirection.EAST
+	elif angle >= -45 and angle < 45:
+		return_value = CardinalDirection.SOUTH
+	elif angle >= 45 and angle < 135:
+		return_value = CardinalDirection.WEST
+	else:
+		# North has some fuckery wrap around (135..-135),
+		# but this is the last option so just 'else' it
+		# way simpler this way...
+		return_value = CardinalDirection.NORTH
+
+	return return_value

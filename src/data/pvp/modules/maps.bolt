@@ -1,58 +1,112 @@
+from pvp:teams import Team, generate_team_object_tag
+from tools:angle import angle_to_cardinal_direction
 from pvp:map_markers import
-	show_map_markers,
-	hide_map_markers,
-	all_map_markers_selector,
-	filter_map_marker_selector,
-from pvp:teams import Team
+	MAP_MARKER_ENTITY,
+	ANY_MAP_MARKER_TAG,
+	generate_map_marker_id_tag,
+	get_map_marker_data,
+	loaded_map_marker_data,
 from pvp:nexus import
 	spawn_nexus,
 	despawn_nexus,
-	get_nexus_selector,
-	get_nearest_nexus_selector,
+	NEXUS_ROOT_ENTITY,
+	NEXUS_ROOT_TAG,
+from pvp:inhibitor import
+	spawn_inhibitor,
+	despawn_inhibitor,
+	INHIBITOR_ROOT_ENTITY,
+	INHIBITOR_ROOT_TAG,
+from pvp:generator import
+	spawn_generator,
+	despawn_generator,
+	GENERATOR_ROOT_ENTITY,
+	GENERATOR_ROOT_TAG,
+from pvp:shop import
+	spawn_shop,
+	despawn_shop,
+	SHOP_ROOT_ENTITY,
+	SHOP_ROOT_TAG,
 
 MAP_MAX_SIZE_RADIUS = 100
-
-loaded_map_ids = []
 loaded_map_data = {}
 
 def load_maps(raw_data: dict):
 	for map_id, map_data in raw_data['maps'].items():
-		loaded_map_ids.append(map_id)
 		loaded_map_data[map_id] = map_data
 
 def initialize_map(map_id: str):
-	force_load_map_chunks(map_id)
+	_force_load_map_chunks(map_id)
 
 	map_origin_pos = _get_map_data(map_id)['origin_pos']
+	positioned map_origin_pos as @e[type=MAP_MARKER_ENTITY, tag=ANY_MAP_MARKER_TAG, distance=(None, MAP_MAX_SIZE_RADIUS)] at @s:
+		for team_ in Team.iterate():
+			if entity @s[tag=generate_map_marker_id_tag('NEXUS'), tag=generate_team_object_tag(team_)]:
+				spawn_nexus(team_)
+			if entity @s[tag=generate_map_marker_id_tag('INHIBITOR'), tag=generate_team_object_tag(team_)]:
+				spawn_inhibitor(team_)
+			if entity @s[tag=generate_map_marker_id_tag('GENERATOR'), tag=generate_team_object_tag(team_)]:
+				spawn_generator(team_)
+
+		if entity @s[tag=generate_map_marker_id_tag('SHOP')]:
+			facing_direction = angle_to_cardinal_direction(this.Rotation[0])
+			spawn_shop(facing_direction)
+
+		_hide_map_marker('@s')
 	
-
-	positioned map_origin_pos:
-		hide_map_markers(MAP_MAX_SIZE_RADIUS)
-
-		as all_map_markers_selector(MAP_MAX_SIZE_RADIUS) at @s:
-			for team_id in Team.get_all():
-				as filter_map_marker_selector('nexus', team_id):
-					spawn_nexus(team_id)
-
-	force_unload_map_chunks(map_id)
+	_force_unload_map_chunks(map_id)
+	log_chat(LogLevel.INFO, f'Initialized map <{map_id}>')
 
 def reset_map(map_id: str):
+	_force_load_map_chunks(map_id)
+
 	map_origin_pos = _get_map_data(map_id)['origin_pos']
-	positioned map_origin_pos:
-		show_map_markers(MAP_MAX_SIZE_RADIUS)
+	positioned map_origin_pos as @e[type=MAP_MARKER_ENTITY, tag=ANY_MAP_MARKER_TAG, distance=(None, MAP_MAX_SIZE_RADIUS)] at @s:
+		if entity @s[tag=generate_map_marker_id_tag('NEXUS')]:
+			as @n[type=NEXUS_ROOT_ENTITY, tag=NEXUS_ROOT_TAG, distance=..10] at @s:
+				despawn_nexus('@s')
+		if entity @s[tag=generate_map_marker_id_tag('INHIBITOR')]:
+			as @n[type=INHIBITOR_ROOT_ENTITY, tag=INHIBITOR_ROOT_TAG, distance=..10] at @s:
+				despawn_inhibitor('@s')
+		if entity @s[tag=generate_map_marker_id_tag('GENERATOR')]:
+			as @n[type=GENERATOR_ROOT_ENTITY, tag=GENERATOR_ROOT_TAG, distance=..10] at @s:
+				despawn_shop('@s')
+		if entity @s[tag=generate_map_marker_id_tag('SHOP')]:
+			as @n[type=SHOP_ROOT_ENTITY, tag=SHOP_ROOT_TAG, distance=..10] at @s:
+				despawn_shop('@s')
+	
+		_show_map_marker('@s')
 
-		as all_map_markers_selector(MAP_MAX_SIZE_RADIUS) at @s:
-			if entity filter_map_marker_selector('nexus'):
-				as get_nearest_nexus_selector():
-					despawn_nexus()
+	_force_unload_map_chunks(map_id)
+	log_chat(LogLevel.INFO, f'Reset map <{map_id}>')
 
-def force_load_map_chunks(map_id: str):
+def _hide_map_marker(selector_: str):
+	as selector(selector_):
+		this.Invisible = 1
+		this.Invulnerable = 1
+		this.Marker = 1
+		this.CustomNameVisible = 0
+
+		this.ArmorItems[3] = {}
+
+def _show_map_marker(selector_: str):
+	as selector(selector_):
+		this.Invisible = 0
+		this.Invulnerable = 0
+		this.Marker = 0
+		this.CustomNameVisible = 1
+
+		for map_marker_id in loaded_map_marker_data:
+			if entity @s[tag=generate_map_marker_id_tag(map_marker_id)]:
+				item_id = get_map_marker_data(map_marker_id)['head_block_id']
+				this.ArmorItems[3] = {"id": item_id, "count": 1}
+
+def _force_load_map_chunks(map_id: str):
 	map_origin_pos = _get_map_data(map_id)['origin_pos']
 
 	positioned map_origin_pos:
 		forceload add ~MAP_MAX_SIZE_RADIUS ~MAP_MAX_SIZE_RADIUS ~-MAP_MAX_SIZE_RADIUS ~-MAP_MAX_SIZE_RADIUS
 		
-def force_unload_map_chunks(map_id: str):
+def _force_unload_map_chunks(map_id: str):
 	map_origin_pos = _get_map_data(map_id)['origin_pos']
 
 	positioned map_origin_pos:
@@ -60,6 +114,6 @@ def force_unload_map_chunks(map_id: str):
 
 def _get_map_data(map_id: str) -> dict:
 	map_data = loaded_map_data.get(map_id)
-	if map_data == None:
-		throw_exception(f"Received invalid map ID of '{map_id}'")
+	if map_data is None:
+		throw_error(f"Received invalid map ID of '{map_id}'")
 	return map_data

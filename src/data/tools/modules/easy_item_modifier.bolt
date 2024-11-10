@@ -1,0 +1,24 @@
+from dataclasses import dataclass
+from typing import ClassVar
+
+ITEM_MODIFIERS_DIR = 'tools:easy_item_modifier'
+
+@dataclass
+class EasyItemModifier:
+	modifier_contents: dict
+
+	path: str = ''
+	index: int = -1
+
+	global_index: ClassVar[int] = 0
+	
+	def __post_init__(self):
+		self.index = self.global_index
+		self.increment_global_index()
+
+		self.path = f'{ITEM_MODIFIERS_DIR}/{self.index}'
+		item_modifier self.path self.modifier_contents
+
+	@classmethod
+	def increment_global_index(cls):
+		cls.global_index += 1

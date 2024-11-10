@@ -1,0 +1,45 @@
+from pvp:shop import
+	register_shop_item_action,
+	set_player_shop_active_page,
+	ShopPageID,
+from tools:ysb import
+	ysb_set_item,
+	ysb_clear_all_items,
+	ysb_modify_item,
+	ysb_give_all_items,
+
+def register_shop_item_actions():
+	def set_page_home():
+		set_player_shop_active_page(ShopPageID.HOME)
+	def set_page_gear_upgrades():
+		set_player_shop_active_page(ShopPageID.GEAR_UPGRADES)
+	def set_page_one_time_gear():
+		set_player_shop_active_page(ShopPageID.ONE_TIME_GEAR)
+	def set_page_resource_upgrades():
+		set_player_shop_active_page(ShopPageID.RESOURCE_UPGRADES)
+	def set_page_blocks():
+		set_player_shop_active_page(ShopPageID.BLOCKS)
+	def set_page_consumables():
+		set_player_shop_active_page(ShopPageID.CONSUMABLES)
+	def buy_one_time_stone_sword():
+		ysb_clear_all_items()
+
+		# my_item = "stone_sword[custom_name='[{\"color\":\"gray\",\"italic\":false,\"text":\"Buy \"},{\"color\":\"white\",\"italic\":false,\"text\":\"Stone Sword\"}]',attribute_modifiers={modifiers:[],show_in_tooltip:false}]"
+		# ysb_set_item(0, my_item)
+
+	def buy_one_time_iron_sword():
+		...
+
+	def buy_cute_mushroom():
+		give @s red_mushroom 6
+		say Eren is awesome!
+
+	register_shop_item_action('set_page_home', set_page_home)
+	register_shop_item_action('set_page_gear_upgrades', set_page_gear_upgrades)
+	register_shop_item_action('set_page_one_time_gear', set_page_one_time_gear)
+	register_shop_item_action('set_page_resource_upgrades', set_page_resource_upgrades)
+	register_shop_item_action('set_page_blocks', set_page_blocks)
+	register_shop_item_action('set_page_consumables', set_page_consumables)
+	register_shop_item_action('buy_one_time_stone_sword', buy_one_time_stone_sword)
+	register_shop_item_action('buy_one_time_iron_sword', buy_one_time_iron_sword)
+	register_shop_item_action('buy_cute_mushroom', buy_cute_mushroom)

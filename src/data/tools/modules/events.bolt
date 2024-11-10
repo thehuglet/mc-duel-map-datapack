@@ -1,0 +1,84 @@
+from bolt_expressions import Scoreboard
+from contextlib import contextmanager
+
+def _event_path(event_id: str) -> str:
+	return f'tools:event_handler/{event_id}'
+
+# --------------------------------------------------------------------
+
+merge function_tag minecraft:load {"values": [_event_path('load')]}
+function _event_path('load'):
+	# [tick_20]
+	schedule function _event_path('tick_20') 20t
+
+merge function_tag minecraft:tick {"values": [_event_path('tick')]}
+function _event_path('tick'):
+	# [player_tick]
+	as @a at @s function _event_path('player_tick')
+
+function _event_path('tick_20'):
+	schedule function _event_path('tick_20') 20t
+
+function _event_path('player_tick'):
+	# [player_opened_ender_chest]
+	opened_ec_scoreboard = Scoreboard('tools.events.player_opened_ender_chest', 'minecraft.custom:minecraft.open_enderchest')
+	if opened_ec_scoreboard['@s'] >= 1:
+		opened_ec_scoreboard['@s'].reset()
+		function _event_path('player_opened_ender_chest')
+
+	# [player_moved_or_rotated]
+	previous_tick_sum_scoreboard = Scoreboard('tools.events.player_moved_or_rotated.previous_tick_sum', 'dummy')
+
+	sum_rot_pos = score_var()
+	player_pos = data_var(this.Pos)
+	player_rot = data_var(this.Rotation)
+
+	sum_rot_pos = (
+		score_abs(player_pos[0] * 1000) +
+		score_abs(player_pos[1] * 1000) +
+		score_abs(player_pos[2] * 1000) +
+		score_abs(player_rot[0] * 100) +
+		score_abs(player_rot[1] * 100)
+	)
+
+	if previous_tick_sum_scoreboard['@s'] != sum_rot_pos:
+		function _event_path('player_moved_or_rotated')
+	previous_tick_sum_scoreboard['@s'] = sum_rot_pos 
+
+function _event_path('player_opened_ender_chest'):
+	...
+
+function _event_path('player_moved_or_rotated'):
+	...
+
+# --------------------------------------------------------------------
+
+@contextmanager
+def load():
+	append function _event_path('load'):
+		yield
+
+@contextmanager
+def tick():
+	append function _event_path('tick'):
+		yield
+
+@contextmanager
+def tick_20():
+	append function _event_path('tick_20'):
+		yield
+
+@contextmanager
+def player_tick():
+	append function _event_path('player_tick'):
+		yield
+
+@contextmanager
+def player_opened_ender_chest():
+	append function _event_path('player_opened_ender_chest'):
+		yield
+
+@contextmanager
+def player_moved_or_rotated():
+	append function _event_path('player_moved_or_rotated'):
+		yield

@@ -1,3 +1,5 @@
 maps:
+  KOIRAT_MAP_0:
+    origin_pos: [954, 105, 5]
   DEV_TEST:
     origin_pos: [-1000, 100, 0]

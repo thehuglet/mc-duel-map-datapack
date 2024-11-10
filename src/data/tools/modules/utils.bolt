@@ -12,3 +12,6 @@ def snake_to_title_case(snake_str: str):
 		capitalized_words.append(word.capitalize())
 	
 	return ''.join(capitalized_words)
+
+def pos_list_to_str(pos: list) -> str:
+    return ' '.join(map(str, pos))

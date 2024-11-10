@@ -4,6 +4,7 @@ name: duel_map
 require:
   - bolt
   - bolt_expressions
+  - plugins.macro_interpolation
 
 data_pack:
   name: 'Duel Map Datapack'
@@ -16,7 +17,7 @@ pipeline:
 meta:
   bolt:
     prelude:
-      - 'tools:prelude'
+      - 'tools:prelude/prelude'
     entrypoint:
       - 'pvp:main'
     

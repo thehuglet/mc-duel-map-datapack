@@ -1,0 +1,85 @@
+from bolt_expressions import Scoreboard
+from pvp:teams import Team, generate_team_object_tag, TEAM_COLOR_IDS
+from tools:entity_link import get_children_entities, link_entities
+from pvp:utils import default_block_display_data, default_game_object_text_display
+
+INHIBITOR_ROOT_TAG = 'pvp.inhibitor.inhibitor_root'
+INHIBITOR_ROOT_ENTITY = 'minecraft:marker'
+INHIBITOR_BLOCK_ID = 'minecraft:white_stained_glass'
+
+INHIBITOR_IS_RESPAWNING_TAG = 'pvp.inhibitor.is_respawning'
+INHIBITOR_RESPAWN_TIME_SECONDS = 180
+
+respawn_timer_scoreboard = Scoreboard('pvp.inhibitor.respawn_timer', 'dummy')
+
+def update_inhibitors(team_: Team):
+	as @e[type=INHIBITOR_ROOT_ENTITY, tag=INHIBITOR_ROOT_TAG, tag=generate_team_object_tag(team_)] at @s:
+		if entity @s[tag=!INHIBITOR_IS_RESPAWNING_TAG]:
+			unless block ~ ~ ~ INHIBITOR_BLOCK_ID:
+				respawn_timer_scoreboard['@s'] = INHIBITOR_RESPAWN_TIME_SECONDS
+				tag @s add INHIBITOR_IS_RESPAWNING_TAG
+
+				log_chat(LogLevel.INFO, '@s', 'destroyed!')
+
+def update_inhibitors_20t():
+	as @e[type=INHIBITOR_ROOT_ENTITY, tag=INHIBITOR_ROOT_TAG, tag=INHIBITOR_IS_RESPAWNING_TAG] at @s:
+		respawn_timer_scoreboard['@s'] -= 1
+		
+		if respawn_timer_scoreboard['@s'] == 0:
+			tag @s remove INHIBITOR_IS_RESPAWNING_TAG
+			_set_inhibitor_block()
+			log_chat(LogLevel.INFO, '@s', 'respawned!')
+
+def despawn_inhibitor(selector_: str):
+	as selector(selector_) at @s:
+		setblock ~ ~ ~ air
+
+		as selector(get_children_entities('@s')):
+			# log_chat(LogLevel.INFO, 'despawned inhibitor child', '@s')
+			kill @s
+		kill @s
+
+def spawn_inhibitor(team_: Team):
+	team_color_id = TEAM_COLOR_IDS[team_]
+
+	temp_link_helper_tag = 'pvp.inhibitor.link_parent'
+
+	summon INHIBITOR_ROOT_ENTITY ~ ~ ~ {
+		Tags: [
+			INHIBITOR_ROOT_TAG,
+			generate_team_object_tag(team_),
+			temp_link_helper_tag
+		],
+		CustomName: f'{{"color": "{team_color_id}", "text": "inhibitor"}}'
+	}
+
+	_set_inhibitor_block()
+
+	summon text_display ~ ~1.3 ~ default_game_object_text_display('Inhibitor', team_color_id):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	summon block_display ~ ~0.5 ~ default_block_display_data(f'{team_color_id}_stained_glass', scale=1.001):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	summon block_display ~ ~0.5 ~ default_block_display_data(f'pearlescent_froglight', scale=0.6, translation_offset=[0.0, 0.0, 0.0]):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+	
+	summon block_display ~ ~0.5 ~ default_block_display_data('honey_block', scale=0.61, translation_offset=[0.0, 0.0, 0.0]):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	summon block_display ~ ~0.5 ~ default_block_display_data(f'{team_color_id}_stained_glass', scale=0.65):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	summon block_display ~ ~0.5 ~ default_block_display_data(f'{team_color_id}_stained_glass', scale=0.7):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
+
+	tag @n[tag=temp_link_helper_tag] remove temp_link_helper_tag
+
+def _set_inhibitor_block():
+	setblock ~ ~ ~ INHIBITOR_BLOCK_ID

@@ -1,0 +1,21 @@
+from bolt_expressions import ExpressionNode, ScoreSource, Scoreboard
+
+def random(min_: int | ExpressionNode, max_: int | ExpressionNode) -> ScoreSource:
+	min = score_var(min_)
+	max = score_var(max_)
+
+	lcg = Scoreboard('tools.math.random', 'dummy')['.lcg']
+	if not score_exists(lcg):
+		store result score var lcg:
+			seed
+
+    LCG_A = 1630111353
+    LCG_C = 1623164762
+    LCG_M = 2147483647
+	size = score_var()
+	temp = score_var()
+
+	size = max - min + 1
+	lcg = (lcg * LCG_A + LCG_C) % LCG_M
+	temp = lcg / 8 % size + min
+    return score_var(temp)

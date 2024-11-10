@@ -1,0 +1,7 @@
+import logging
+
+logger = logging.getLogger('')
+
+def throw_error(text: str):
+	logger.error(text)
+	exit()

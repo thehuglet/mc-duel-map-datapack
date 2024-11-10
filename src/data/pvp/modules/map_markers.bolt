@@ -1,140 +1,62 @@
-from bolt_expressions import DataSource, Scoreboard, Data
-from mecha import AstSelector
-from pvp:teams import Team, get_team_color_id, get_team_name
-from tools:cardinal_directions import angle_to_cardinal_direction
+from bolt_expressions import Data
+from nbtlib import Byte
+from pvp:teams import TEAM_COLOR_IDS, Team, generate_team_object_tag
+from tools:minecraft_color_id import MinecraftColorID
+from tools:angle import offset_angle, snap_angle_to_cardinal_direction
 
-MAP_MARKER_TAG = 'pvp.map_marker.map_marker'
-TEAM_REQUIRED_MARKER_TYPES = ['generator', 'inhibitor', 'nexus', 'shop']
-MAP_MARKER_HEAD_ITEMS = {
-	'generator': 'iron_block',
-	'inhibitor': 'trial_spawner',
-	'nexus': 'spawner',
-	'shop': 'ender_chest'
+ANY_MAP_MARKER_TAG = 'pvp.map_markers.any_map_marker'
+MAP_MARKER_ENTITY = 'minecraft:armor_stand'
+DEFAULT_MAP_MARKER_DATA = {
+	'CustomNameVisible': Byte(1),
+	'Tags': [ANY_MAP_MARKER_TAG],
+	'NoGravity': Byte(1),
+	'Silent': Byte(1),
+	'Small': Byte(1),
 }
 
-def all_map_markers_selector(radius: int) -> AstSelector:
-	return selector(f'@e[type=armor_stand, tag={MAP_MARKER_TAG}, distance=..{radius}]')
+loaded_map_marker_data = {}
 
-def filter_map_marker_selector(map_marker_id: str, team_id: Team | None = None):
-	map_marker_type_tag = _generate_marker_type_tag(map_marker_id)
+def load_map_marker_data(raw_data: dict):
+	for map_marker_id, map_marker_data in raw_data['map_marker_data'].items():
+		loaded_map_marker_data[map_marker_id] = map_marker_data
 
-	if team_id == None:
-		return selector(f'@s[tag={map_marker_type_tag}]')
+def spawn_map_marker(map_marker_id: str):
+	map_marker_data = get_map_marker_data(map_marker_id)
 
-	team_tag = _generate_marker_team_tag(team_id)
-	return selector(f'@s[tag={map_marker_type_tag}, tag={team_tag}]')
+	summon MAP_MARKER_ENTITY ~ ~ ~ DEFAULT_MAP_MARKER_DATA:
+		tag @s add generate_map_marker_id_tag(map_marker_id)
+		this.CustomName = _generate_map_marker_custom_name(map_marker_id)
+		this.ArmorItems[3] = {id: map_marker_data['head_block_id'], count: 1}
 
-def spawn_marker_generator():
-	_summon_map_marker('generator', head_item=MAP_MARKER_HEAD_ITEMS['generator'])
+		map_marker_facing_angle = snap_angle_to_cardinal_direction(offset_angle(Data.entity('@p').Rotation[0], 180.0))
+		this.Rotation[0] = map_marker_facing_angle
+		log_chat(LogLevel.INFO, 'Spawned Map Marker', '@s')
 
-def spawn_marker_shop():
-	sb_temp = Scoreboard('pvp.temp', 'dummy')
-	temp_data = Data.storage('pvp:temp')
+def assign_team_to_closest_map_marker(team_: Team):
+	as @n[type=MAP_MARKER_ENTITY, tag=ANY_MAP_MARKER_TAG, distance=..1.66]:
+		for team_to_remove in Team.iterate():
+			tag @s remove generate_team_object_tag(team_to_remove)
 
-	as @p at @s:
-		summon marker ~ ~ ~:
-			rotated as @p tp @s ~ ~ ~ ~180 ~
-			sb_temp['#inverted_rotation'] = Data.entity('@s').Rotation[0] * 1000
-			temp_data.facing_angle = Data.cast(sb_temp['#inverted_rotation'], 'float') / 1000
-			kill @s
-	
-	facing_angle = angle_to_cardinal_direction(temp_data.facing_angle)
-	cardinal_direction_rotation_map = {
-		'north': 180,
-		'west': 90,
-		'south': 0,
-		'east': -90
-	}
+		for map_marker_id in loaded_map_marker_data:
+			if entity @s[tag=generate_map_marker_id_tag(map_marker_id)]:
+				is_team_required = get_map_marker_data(map_marker_id).get('require_team', false)
+				if is_team_required:
+					this.CustomName = _generate_map_marker_custom_name(map_marker_id, team_)
+					tag @s add generate_team_object_tag(team_)
+					log_chat(LogLevel.INFO, 'Set team of', '@s', 'to', Team.get_name(team_))
 
-	for cardinal_direction in ['north', 'west', 'south', 'east']:
-		if facing_angle == cardinal_direction:
-			temp_tag = 'pvp.map_marker.temp_summon_set_rot'
+def generate_map_marker_id_tag(map_marker_id: str) -> str:
+	return f'pvp.map_markers.map_marker.{map_marker_id}'
 
-			_summon_map_marker('shop', head_item=MAP_MARKER_HEAD_ITEMS['shop'], facing=facing_angle, extra_tags=[temp_tag, generate_facing_tag(cardinal_direction)])
-			as @n[type=armor_stand, tag=temp_tag] at @s:
-				tp @s ~ ~ ~ cardinal_direction_rotation_map[cardinal_direction] 0
-				tag @s remove temp_tag
+def get_map_marker_data(map_marker_id: str) -> dict:
+	map_marker_data = loaded_map_marker_data.get(map_marker_id)
+	if map_marker_data is None:
+		throw_error(f"Received invalid map marker ID of '{map_marker_id}'")
+	return map_marker_data
 
-def spawn_marker_inhibitor():
-	_summon_map_marker('inhibitor', head_item=MAP_MARKER_HEAD_ITEMS['inhibitor'])
-
-def spawn_marker_nexus():
-	_summon_map_marker('nexus', head_item=MAP_MARKER_HEAD_ITEMS['nexus'])
-
-def assign_team_to_closest_marker(team_id: Team):
-	as @n[type=armor_stand, tag=MAP_MARKER_TAG, distance=..1.66]:
-		for _team_id in Team.get_all():
-			tag @s remove _generate_marker_team_tag(_team_id)
-
-		for marker_type in TEAM_REQUIRED_MARKER_TYPES:
-			if entity @s[tag=_generate_marker_type_tag(marker_type)]:
-				this.CustomName = _generate_marker_custom_name(marker_type, team_id)
-
-				# tag @s add f'pvp.map_marker.team.{get_team_name(team_id)}'
-				tag @s add _generate_marker_team_tag(team_id)
-
-def show_map_markers(radius: int):
-	as @e[type=armor_stand, tag=MAP_MARKER_TAG, distance=(None, radius)]:
-		this.Invisible = 0
-		this.Invulnerable = 0
-		this.Marker = 0
-		this.CustomNameVisible = 1
-
-		for marker_type, head_item_id in MAP_MARKER_HEAD_ITEMS.items():
-			if entity @s[tag=_generate_marker_type_tag(marker_type)]:
-				this.ArmorItems[3] = {"id": head_item_id, "count": 1}
-
-def hide_map_markers(radius: int):
-	as @e[type=armor_stand, tag=MAP_MARKER_TAG, distance=(None, radius)]:
-		this.Invisible = 1
-		this.Invulnerable = 1
-		this.Marker = 1
-		this.CustomNameVisible = 0
-
-		this.ArmorItems[3] = {}
-
-def generate_facing_tag(facing_direction: str) -> str:
-	return f'pvp.map_marker.facing_direction.{facing_direction}'
-
-def _generate_marker_team_tag(team_id: Team) -> str:
-	return f'pvp.map_marker.team.{get_team_name(team_id)}'
-
-def _generate_marker_type_tag(marker_type_id: str) -> str:
-	return f'pvp.map_marker.{marker_type_id}'
-
-def _summon_map_marker(
-	map_marker_type: str,
-	head_item: str,
-	facing: DataSource | None = None,
-	extra_tags: list = []
-):
-	type_tag = _generate_marker_type_tag(map_marker_type)
-
-	summon armor_stand ~ ~ ~ {
-		CustomNameVisible: 1b,
-		CustomName: _generate_marker_custom_name(map_marker_type),
-		Tags: [type_tag, MAP_MARKER_TAG],
-		NoGravity: 1b,
-		Silent: 1b,
-		Small: 1b,
-		ArmorItems: [
-			{},
-			{},
-			{},
-			{id: head_item, count:1}
-		]
-	}:
-		for tag_name in extra_tags:
-			tag @s add tag_name
-
-def _generate_marker_custom_name(name: str, team_id: Team | None = None) -> str:
-	name_color = 'white'
-	if team_id != None:
-		name_color = get_team_color_id(team_id)
-	
-	return f'[\
-			{{"text": "[", "color": "gray"}}, \
-			{{"text": "marker", "color": "light_purple"}}, \
+def _generate_map_marker_custom_name(map_marker_id: str, team_: Team | None = None) -> str:
+	name_color = TEAM_COLOR_IDS.get(team_, MinecraftColorID.WHITE)
+	return f'[{{"text": "[", "color": "gray"}}, \
+			{{"text": "M", "color": "gold"}}, \
 			{{"text": "] ", "color": "gray"}},\
-			{{"text": "{name}", "color": "{name_color}"}}\
-		]'
+			{{"text": "{map_marker_id}", "color": "{name_color}"}}]'

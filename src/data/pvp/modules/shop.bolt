@@ -1,60 +1,167 @@
-from mecha import AstSelector
-from bolt_expressions import Scoreboard, Data, DataSource, ExpressionNode
-# from pvp:teams import Team
-# import pvp:items as items
-import pvp:shop_items as shop_items
-from tools:ender_chest import set_ec_slot, clear_all_ec_slots
+from bolt_expressions import Data, Scoreboard, DataSource, ScoreSource
+from nbtlib import Byte
+from typing import Callable
+from tools:entity_link import get_children_entities, link_entities
+from pvp:teams import generate_team_id, Team
+from pvp:utils import default_game_object_text_display
+from tools:minecraft_color_id import MinecraftColorID
+from tools:ec import ec_set_from_container, ec_clear_all_items
+from tools:ysb import
+	ysb_pos,
+	ysb_get_block_data,
+	ysb_clear_all_items,
+	ysb_give_all_items,
+	ysb_modify_item,
+	ysb_set_item,
+from pvp:item_modifiers import ItemModifier
+import tools:events as events
 
-SHOP_ROOT_TAG = 'pvp.shop.root'
-# def set_shop_item_lore(buy_cost: int | ExpressionNode):
-# 	sb_temp = Scoreboard('pvp.temp')
-# 	sb_temp['#temp'] = buy_cost
+class ShopPageID(Enum):
+	HOME = 0
+	GEAR_UPGRADES = 1
+	ONE_TIME_GEAR = 2
+	RESOURCE_UPGRADES = 3
+	BLOCKS = 4
+	CONSUMABLES = 5
 
-# 	item_modifier pvp:shop/set_shop_item_lore {
-# 		"function": "minecraft:set_lore",
-# 		"entity": "this",
-# 		"lore": [
-# 			{
-# 				"text": "⛀ ",
-# 				"color": "gold",
-# 				"italic": false,
-# 				"extra": [
-# 					{
-# 						"score": {
-# 							"name": "#temp",
-# 							"objective": "pvp.temp"
-# 						},
-# 						"color": "gold",
-# 						"italic": false
-# 					}
-# 				]
-# 			}
-# 		],
-# 		"mode": "replace_all"
-# 	}
+SHOP_ROOT_TAG = 'pvp.shop.shop_root'
+SHOP_ROOT_ENTITY = 'minecraft:marker'
+SHOP_GUI_ITEM_CUSTOM_DATA = 'pvp.shop.gui_item'
 
-# 	# TODO: fix this shit
-# 	item modify entity @p weapon.mainhand pvp:shop/set_shop_item_lore
+loaded_shop_data = {}
+shop_active_page_scoreboard = Scoreboard('pvp.shop.active_page', 'dummy')
+page_contents_map: dict[ShopPageID, str] = {
+	ShopPageID.HOME: 'HOME',
+	ShopPageID.GEAR_UPGRADES: 'GEAR_UPGRADES',
+	ShopPageID.ONE_TIME_GEAR: 'ONE_TIME_GEAR',
+	ShopPageID.RESOURCE_UPGRADES: 'RESOURCE_UPGRADES',
+	ShopPageID.BLOCKS: 'BLOCKS',
+	ShopPageID.CONSUMABLES: 'CONSUMABLES'
+}
 
-	
+def load_shop_data(raw_data: dict):
+	for shop_id, shop_data in raw_data['shop_data'].items():
+		loaded_shop_data[shop_id] = shop_data
 
-def update_user_shop():
-	clear_all_ec_slots()
+def register_shop_item_action(action_id: str, callback: Callable):
+	with events.player_tick():
+		picked_item = score_var()
 
-	# TODO: remove this shit
-	# set_shop_item_lore(69)
-	# set_ec_slot(13, shop_items.Swords.STONE_SWORD, 1)
+		store success score var picked_item:
+			clear @s *[minecraft:custom_data~{pvp.shop.action_id: action_id}] 0
 
-def spawn_shop(facing_direction: DataSource):
-	# Shop root
-	summon minecraft:marker ~ ~ ~ {
-		CustomName: f'{{"color": "light_purple", "text": "Shop"}}',
-		Tags: [SHOP_ROOT_TAG]
+		if picked_item == 1:
+			callback()
+
+def update_player_shop():
+	active_page_id = shop_active_page_scoreboard['@s']
+	page_data = loaded_shop_data['page_data']
+	player_ec_items = data_var(this.EnderItems)
+
+	_scan_and_give_back_foreign_items_to_player(this.EnderItems)
+	ec_clear_all_items()
+
+	for mapped_page_id, mapped_page_contents in page_contents_map.items():
+		if active_page_id == mapped_page_id:
+			_set_player_shop_page_contents(page_data[mapped_page_contents])
+
+	raw f'clear @s *[custom_data~{{{SHOP_GUI_ITEM_CUSTOM_DATA}: 1b}}]'
+
+def set_player_shop_active_page(page_id: ShopPageID):
+	shop_active_page_scoreboard['@s'] = page_id
+
+def despawn_shop(selector_: str):
+	as selector(selector_) at @s:
+		setblock ~ ~ ~ air
+
+		as selector(get_children_entities('@s')):
+			kill @s
+		kill @s
+
+def spawn_shop(facing_direction: str):
+	temp_link_helper_tag = 'pvp.nexus.link_parent'
+
+	summon SHOP_ROOT_ENTITY ~ ~ ~ {
+		Tags: [
+			SHOP_ROOT_TAG,
+			temp_link_helper_tag
+		],
+		CustomName: f'{{"color": "light_purple", "text": "shop"}}'
 	}
 
-	# Chest block
-	with var Data.cast({direction: facing_direction}):
-		$setblock ~ ~ ~ minecraft:ender_chest[facing=$(direction)]
+	summon text_display ~ ~1.2 ~ default_game_object_text_display('Shop', MinecraftColorID.LIGHT_PURPLE):
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
 
-def get_shop_selector() -> AstSelector:
-	return selector(f'@e[type=marker, tag={SHOP_ROOT_TAG}]')
+	with var Data.cast({facing_arg: facing_direction}):
+		$setblock ~ ~ ~ ender_chest[facing=$(facing_arg)]
+
+	tag @n[tag=temp_link_helper_tag] remove temp_link_helper_tag
+
+def _set_player_shop_page_contents(page_data: dict):
+	ysb_clear_all_items()
+
+	if not page_data:
+		return
+
+	slots_pattern = page_data.get('slots_pattern')
+	if not slots_pattern:
+		return
+
+	parsed_slots_pattern = ''.join(slots_pattern.split())
+	for slot, character in enumerate(parsed_slots_pattern):
+		if character == '_':
+			ysb_set_item(slot, 'minecraft:air')
+			continue
+
+		slot_data = (page_data.get('slots_pattern_data') or {}).get(character)
+		if not slot_data:
+			# Fallback to global slot data
+			global_slot_pattern_data = loaded_shop_data.get('global_pattern_data') or {}
+			slot_data = global_slot_pattern_data.get(character)
+			if not slot_data:
+				continue
+
+		item_count = slot_data.get('item_count', 1)
+		item_data = slot_data['item']
+
+		if item_data.endswith('\n'):
+			item_data = item_data[:-1]
+
+		if '<TEAM_COLOR>' in item_data:
+			# Yes, this is terrible but works
+			if entity @s[team=generate_team_id(Team.RED)]:
+				ysb_set_item(slot, item_data.replace('<TEAM_COLOR>', 'red'), item_count)
+				ysb_modify_item(slot, ItemModifier.SHOP_GUI_ITEM.path)
+			if entity @s[team=generate_team_id(Team.BLUE)]:
+				ysb_set_item(slot, item_data.replace('<TEAM_COLOR>', 'blue'), item_count)
+				ysb_modify_item(slot, ItemModifier.SHOP_GUI_ITEM.path)
+			if entity @s[team=!generate_team_id(Team.BLUE), team=!generate_team_id(Team.RED)]:
+				ysb_set_item(slot, item_data.replace('<TEAM_COLOR>', 'pink'), item_count)
+				ysb_modify_item(slot, ItemModifier.SHOP_GUI_ITEM.path)
+		else:
+			ysb_set_item(slot, item_data, item_count)
+			ysb_modify_item(slot, ItemModifier.SHOP_GUI_ITEM.path)
+
+		if slot_data.get('action_id') != None:
+			target_ysb_slot = ysb_get_block_data().Items[{'Slot': Byte(slot)}]
+			target_ysb_slot.components."minecraft:custom_data"."pvp.shop.action_id" = slot_data['action_id']
+
+	ec_set_from_container(ysb_pos)
+
+def _scan_and_give_back_foreign_items_to_player(player_ec_items: DataSource):
+	# player_ec_items has to be a player source!
+	for slot_id in range(27):
+		current_item = player_ec_items[{Slot: Byte(slot_id)}]
+		is_empty_slot = score_var(not current_item)
+		if not is_empty_slot:
+			nbt_path = f"{current_item._path}.components.\"minecraft:custom_data\"{{{SHOP_GUI_ITEM_CUSTOM_DATA}: 1b}}"
+			unless data entity @s nbt_path:
+				_give_item_to_player(current_item)
+
+def _give_item_to_player(item_data: DataSource):
+	copied_item_data = data_var(item_data)
+	copied_item_data.Slot = Byte(0)
+
+	ysb_clear_all_items()
+	ysb_get_block_data().Items.append(copied_item_data)
+	ysb_give_all_items('@s')

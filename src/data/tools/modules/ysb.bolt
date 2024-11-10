@@ -1,12 +1,13 @@
+from bolt_expressions import Data, DataSource
+from tools:utils import pos_list_to_str
 
+SHULKER_MAX_SLOT_INDEX = 27
+ysb_pos = [0, 0, 0]
 
-SHULKER_SLOT_COUNT = 27
-shulker_pos = [0, 0, 0]
-
-def initialize_util_shulker(x: int, y: int, z: int):
-	global shulker_pos
+def ysb_initialize(x: int, y: int, z: int):
+	global ysb_pos
 	
-	shulker_pos = [x, y, z]
+	ysb_pos = [x, y, z]
 	setblock x y z minecraft:yellow_shulker_box
 
 	loot_table minecraft:blocks/yellow_shulker_box {
@@ -98,16 +99,19 @@ def initialize_util_shulker(x: int, y: int, z: int):
 		}
 	}
 
-def util_shulker_set_item(slot: int, item: str, count: int = 1):
-	raw f'item replace block {shulker_pos[0]} {shulker_pos[1]} {shulker_pos[2]} container.{slot} with {item} {count}'
+def ysb_get_block_data() -> DataSource:
+	return Data.block(pos_list_to_str(ysb_pos))
 
-def util_shulker_modify_item(slot: int, item_modifier):
-	raw f'item modify block {shulker_pos[0]} {shulker_pos[1]} {shulker_pos[2]} container.{slot} {item_modifier.path}'
+def ysb_set_item(slot: int, item: str, count: int = 1):
+	raw f'item replace block {ysb_pos[0]} {ysb_pos[1]} {ysb_pos[2]} container.{slot} with {item} {count}'
 
-def util_shulker_clear_all_items():
-	execute function tools:util_shulker/clear_all_items:
-		for i in range(SHULKER_SLOT_COUNT):
-			raw f'item replace block {shulker_pos[0]} {shulker_pos[1]} {shulker_pos[2]} container.{i} with minecraft:air'
+def ysb_modify_item(slot: int, item_modifier_path: str):
+	raw f'item modify block {ysb_pos[0]} {ysb_pos[1]} {ysb_pos[2]} container.{slot} {item_modifier_path}'
 
-def util_shulker_give_all_items(selector_raw: str):
-	loot give selector(selector_raw) mine shulker_pos[0] shulker_pos[1] shulker_pos[2] stick[custom_data={drop_contents: 1b}]
+def ysb_clear_all_items():
+	execute function tools:ysb/clear_all_items:
+		for i in range(SHULKER_MAX_SLOT_INDEX):
+			raw f'item replace block {ysb_pos[0]} {ysb_pos[1]} {ysb_pos[2]} container.{i} with minecraft:air'
+
+def ysb_give_all_items(selector_raw: str):
+	loot give selector(selector_raw) mine ysb_pos[0] ysb_pos[1] ysb_pos[2] stick[custom_data={drop_contents: 1b}]

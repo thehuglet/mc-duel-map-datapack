@@ -1,34 +1,31 @@
-from tools:mc_colors import MCColor
+# from bolt_expressions import DataSource
+from tools:minecraft_color_id import MinecraftColorID
 
-class Team(BoltEnum):
+class Team(Enum):
 	RED = 0
 	BLUE = 1
 
-team_names: dict[Team, str] = {
-	Team.RED: 	'team_red',
-	Team.BLUE: 	'team_blue',
+TEAM_COLOR_IDS: dict[Team, MinecraftColorID] = {
+	Team.RED: 	MinecraftColorID.RED,
+	Team.BLUE: 	MinecraftColorID.BLUE,
 }
 
-team_color_ids: dict[Team, MCColor] = {
-	Team.RED: 	MCColor.RED,
-	Team.BLUE: 	MCColor.BLUE,
-}
+def join_team(selector_: str, team_: Team):
+	team join generate_team_id(team_) selector(selector_)
 
-def join_team(team_id: Team):
-	team join get_team_full_id(team_id) @s
+def leave_team(selector_: str):
+	team leave selector(selector_)
 
-def initialize_team(team_id: Team):
-	team_color_id = get_team_color_id(team_id)
-	team_full_id = get_team_full_id(team_id)
+def initialize_teams():
+	for team_ in Team.iterate():
+		team_color_id = TEAM_COLOR_IDS[team_]
+		team_id = generate_team_id(team_)
 
-	team add team_full_id {"text": team_full_id, "color": team_color_id}
-	raw f'team modify {team_full_id} color {team_color_id}'
+		team add team_id {"text": team_id, "color": team_color_id}
+		raw f'team modify {team_id} color {team_color_id}'
 
-def get_team_full_id(team_id: Team) -> str:
-	return f'pvp.teams.{get_team_name(team_id)}'
+def generate_team_object_tag(team_: Team) -> str:
+	return f'pvp.teams.team_object.{team_}'
 
-def get_team_name(team_id: Team) -> str:
-	return team_names[team_id]
-
-def get_team_color_id(team_id: Team) -> str:
-	return team_color_ids[team_id]
+def generate_team_id(team_: Team) -> str:
+	return f'pvp.teams.team.{team_}'

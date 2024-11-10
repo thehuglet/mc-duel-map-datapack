@@ -1,0 +1,4 @@
+from bolt_expressions import Scoreboard, Data
+
+temp_scoreboard = Scoreboard('tools.temp', 'dummy')
+temp_storage = Data.storage('tools:temp')

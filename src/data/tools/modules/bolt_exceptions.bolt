@@ -1,7 +1,0 @@
-import logging
-
-logger = logging.getLogger('bolt_exceptions')
-
-def throw_exception(text: str):
-	logger.error(text)
-	exit()

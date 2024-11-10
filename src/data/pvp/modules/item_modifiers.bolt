@@ -1,29 +1,7 @@
-from dataclasses import dataclass
-from typing import ClassVar
+from tools:easy_item_modifier import EasyItemModifier
 
-@dataclass
-class _ItemModifier:
-	modifier_contents: dict
-
-	path: str = ''
-	index: int = -1
-
-	global_index: ClassVar[int] = 0
-	ITEM_MODIFIERS_DIR: ClassVar[str] = 'pvp:items'
-
-	def __post_init__(self):
-		self.index = self.global_index
-		self.increment_global_index()
-
-		self.path = f'{self.ITEM_MODIFIERS_DIR}/modifier_{self.index}'
-		item_modifier self.path self.modifier_contents
-
-	@classmethod
-	def increment_global_index(cls):
-		cls.global_index += 1
-
-class ItemModifier:
-	ITEM_BASE = _ItemModifier(
+class ItemModifier(Enum):
+	BASE_ITEM = EasyItemModifier(
 		[
 			{
 				"function": "minecraft:set_components",
@@ -42,7 +20,7 @@ class ItemModifier:
 			}
 		]
 	)
-	PICKAXE_BASE = _ItemModifier(
+	BASE_PICKAXE = EasyItemModifier(
 		[
 			{
 				"function": "minecraft:set_components",
@@ -54,6 +32,16 @@ class ItemModifier:
 							"minecraft:blue_concrete"
 						]
 					}
+				}
+			}
+		]
+	)
+	SHOP_GUI_ITEM = EasyItemModifier(
+		[
+			{
+				"function": "minecraft:set_components",
+				"components": {
+					"minecraft:custom_data": "{\"pvp.shop.gui_item\": 1b}"
 				}
 			}
 		]

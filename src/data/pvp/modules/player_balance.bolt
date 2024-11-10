@@ -1,0 +1,15 @@
+from bolt_expressions import Scoreboard, ScoreSource
+
+player_balance_scoreboard = Scoreboard('pvp.player_balance.player_balance', 'dummy')
+
+def player_get_balance() -> ScoreSource:
+	return score_var(player_balance_scoreboard['@s'].get())
+
+def player_set_balance(amount: int | ScoreSource):
+	player_balance_scoreboard['@s'] = amount
+
+def player_add_balance(amount: int | ScoreSource):
+	player_balance_scoreboard['@s'] += amount
+
+def player_subtract_balance(amount: int | ScoreSource):
+	player_balance_scoreboard['@s'] -= amount

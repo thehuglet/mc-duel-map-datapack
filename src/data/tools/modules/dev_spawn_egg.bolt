@@ -1,13 +1,14 @@
 from typing import Callable
+import tools:events as events
 
-SPAWNED_MARKER_TAG_PREFIX = 'dev.dev_spawn_egg'
-SPAWN_EGGS_API_DIR = 'dev:give/dev_spawn_egg'
+SPAWNED_MARKER_TAG_PREFIX = 'tools.dev_spawn_egg'
+SPAWN_EGGS_API_DIR = 'tools_api:dev_spawn_egg/give'
 
-def register_dev_spawn_egg(id: str, spawn_egg_id: str, callback: Callable | None):
+def register_dev_spawn_egg(id: str, spawn_egg_id: str, callback: Callable):
 	spawned_marker_tag = f'{SPAWNED_MARKER_TAG_PREFIX}.{id}'
 
 	function f'{SPAWN_EGGS_API_DIR}/{id}':
-		give @s f"{spawn_egg_id}"[	
+		give @s f"{spawn_egg_id}"[
 			item_name=f'{{"color": "light_purple", "text": "{id}"}}',
 			entity_data={
 				id: "minecraft:marker",
@@ -20,8 +21,7 @@ def register_dev_spawn_egg(id: str, spawn_egg_id: str, callback: Callable | None
 	# This is a pretty implicit behavior
 	# I could connect a call from *:main making it explicit,
 	# but it should be fine as this is just a simple dev tool :P
-	with event_tick():
+	with events.tick():
 		as @n[type=marker, tag=spawned_marker_tag] at @s:
-			if callback != None:
-				callback()
+			callback()
 			kill @s

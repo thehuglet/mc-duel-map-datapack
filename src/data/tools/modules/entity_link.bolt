@@ -1,93 +1,62 @@
 from bolt_expressions import Scoreboard, ScoreSource
-from mecha import AstSelector
-from tools:logger import log_chat, LogLevel
 
-sb_parent = Scoreboard('tools.entity_link.parent_id', 'dummy')
-sb_child = Scoreboard('tools.entity_link.child_id', 'dummy')
+ANY_PARENT_TAG = 'tools.entity_link.any_parent'
+ANY_CHILD_TAG = 'tools.entity_link.any_child'
 
-ANY_PARENT_TAG = 'tools.entity_link.parent'
-ANY_CHILD_TAG = 'tools.entity_link.child'
-LAST_ALIVE_PARENT_TAG = 'tools.entity_link.last_alive_parent'
+parent_scoreboard = Scoreboard('tools.entity_link.parent', 'dummy')
+child_scoreboard = Scoreboard('tools.entity_link.child', 'dummy')
 
-def mark_as_parent():
-	"""
-	Marks @s as a parent. Assigns an unique parent ID to @s in the system.
-	"""
-	global sb_parent
+def link_entities(parent: str, child: str):
+	if not _is_single_entity_selector(parent):
+		throw_error(f'Expected single entity selector for the link parent, got <{parent}>')
 
-	if not score_exists(sb_parent['@s']):
-		sb_parent['@s'] = sb_parent['#next']
-		sb_parent['#next'] += 1
+	if not score_exists(parent_scoreboard[parent]):
+		parent_scoreboard[parent] = parent_scoreboard['#next']
+		parent_scoreboard['#next'] += 1
+		tag selector(parent) add ANY_PARENT_TAG
+	
+	child_scoreboard[child] = parent_scoreboard[parent]
+	tag selector(child) add ANY_CHILD_TAG
 
-		tag @s add ANY_PARENT_TAG
+def get_parent_entity(child: str) -> str:
+	if not _is_single_entity_selector(child):
+		throw_error(f'Expected single entity selector for the link child, got <{child}>')
 
-		tag @n[tag=LAST_ALIVE_PARENT_TAG] remove LAST_ALIVE_PARENT_TAG
-		tag @s add LAST_ALIVE_PARENT_TAG
+	selected_parent_tag = 'tools.entity_link.get_parent.selected'
+	ctx_independent_child_tag = 'tools.entity_link.get_parent.ctx_independent_child'
+	ctx_independent_child = f'@n[tag={ctx_independent_child_tag}]'
 
-def mark_as_last_parent():
-	tag @n[tag=LAST_ALIVE_PARENT_TAG] remove LAST_ALIVE_PARENT_TAG
-	tag @s add LAST_ALIVE_PARENT_TAG
-
-def link_to_last_parent():
-	"""
-	Links @s as a child to the last assigned parent in the system.
-	Please ensure there is a valid parent before calling this function.
-	"""
-	global sb_child
-
-	last_alive_parent_raw_selector = f'@n[tag={LAST_ALIVE_PARENT_TAG}]'
-	sb_child['@s'] = sb_parent[last_alive_parent_raw_selector]
-	tag @s add ANY_CHILD_TAG
-	# log_chat(LogLevel.INFO, '@s', 'linked to parent', f'@n[tag={LAST_ALIVE_PARENT_TAG}]')
-
-def get_parent(raw: bool = false) -> AstSelector | str:
-	"""
-	Retrieves the parent of @s and returns the selector.
-	"""
-	global sb_parent
-
-	temp_tag = 'tools.entity_link.temp'
-	selected_parent_tag = 'tools.entity_link.selected_parent'
-	tag @s add temp_tag
-
-	# assumes no parent from the start
-	# if parent is found it flips back to 0
-	sb_parent['#is_missing'] = 1
+	tag selector(child) add ctx_independent_child_tag
 
 	as @e[tag=ANY_PARENT_TAG]:
-		if sb_parent['@s'] == sb_child[f'@n[tag={temp_tag}]']:
-			tag @n[tag=selected_parent_tag] remove selected_parent_tag
+		tag @s remove selected_parent_tag
+		
+		if parent_scoreboard['@s'] == child_scoreboard[child]:
 			tag @s add selected_parent_tag
-			sb_parent['#is_missing'] = 0
-
-	tag @s remove temp_tag
 	
-	if sb_parent['#is_missing']:
-		log_chat(LogLevel.ERROR, 'Could not find link parent for', '@s')
+	tag selector(child) remove ctx_independent_child_tag
 
-	raw_parent_selector = f'@n[tag={selected_parent_tag}]'
-	if raw:
-		return raw_parent_selector
-	return selector(raw_parent_selector)
+	return f'@n[tag={selected_parent_tag}]'
 
-def get_children(raw: bool = false) -> AstSelector | str:
-	"""
-	Retrieves the children of @s and returns the selector.
-	"""
-	selected_child_tag = 'tools.entity_link.selected_child'
-	temp_tag = 'tools.entity_link.temp'
+def get_children_entities(parent: str) -> str:
+	if not _is_single_entity_selector(parent):
+		throw_error(f'Expected single entity selector for the link parent, got <{parent}>')
 
-	tag @s add temp_tag
+	selected_child_tag = 'tools.entity_link.get_children.selected_child'
+	ctx_independent_parent_tag = 'tools.entity_link.get_children.ctx_independent_parent'
+	ctx_independent_parent = f'@n[tag={ctx_independent_parent_tag}]'
+
+	tag selector(parent) add ctx_independent_parent_tag
 
 	as @e[tag=ANY_CHILD_TAG]:
 		tag @s remove selected_child_tag
 
-		if sb_child['@s'] == sb_parent[f'@n[tag={temp_tag}]']:
+		if child_scoreboard['@s'] == parent_scoreboard[ctx_independent_parent]:
 			tag @s add selected_child_tag
 
-	tag @s remove temp_tag
+	tag selector(parent) remove ctx_independent_parent_tag
 
-	raw_children_selector = f'@e[tag={selected_child_tag}]'
-	if raw:
-		return raw_children_selector
-	return selector(raw_children_selector)
+	return f'@e[tag={selected_child_tag}]'
+
+def _is_single_entity_selector(selector: str) -> bool:
+	return selector[1] in ['s', 'n', 'p', 'r'] or 'limit=1' in selector

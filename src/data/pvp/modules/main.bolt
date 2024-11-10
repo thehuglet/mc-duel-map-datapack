@@ -1,61 +1,39 @@
-from bolt_expressions import Scoreboard, Data
-from tools:logger import initialize_logger,log_chat, LogLevel
-from tools:dev_spawn_egg import register_dev_spawn_egg
-from tools:cardinal_directions import angle_to_cardinal_direction
-from tools:util_shulker import initialize_util_shulker
-from tools:yaml import load_yaml
-from pvp:teams import Team, initialize_team, join_team
-from pvp:nexus import spawn_nexus, update_nexus, get_nexus_selector
-from pvp:shop import spawn_shop, update_user_shop, get_shop_selector
-from pvp:kits import load_kits, give_kit
+from nbtlib import Byte
+from pvp:teams import initialize_teams, Team
+from pvp:kits import load_kits
+from pvp:collectable_coin import
+	get_player_inventory_coin_cash_amount,
+	clear_player_inventory_all_coins,
 from pvp:maps import load_maps
-from pvp:game_session import start_game_session, end_game_session
-import pvp:map_markers as map_markers
+from pvp:nexus import update_nexus
+from pvp:inhibitor import update_inhibitors, update_inhibitors_20t
+from pvp:shop_item_action_registry import register_shop_item_actions
+from pvp:map_markers import load_map_marker_data
+from pvp:shop import 
+	update_player_shop,
+	SHOP_ROOT_ENTITY,
+	SHOP_ROOT_TAG,
+	set_player_shop_active_page,
+	ShopPageID,
+	load_shop_data,
+from pvp:generator import update_generators
+from pvp:player_balance import player_add_balance
+from pvp:collectable_coin import update_collectable_coins
+from tools:dev_spawn_egg import register_dev_spawn_egg
+from tools:yaml import load_yaml
+from tools:ysb import ysb_initialize
+import tools:events as events
 
-def assign_map_marker_team_red():
-	map_markers.assign_team_to_closest_marker(Team.RED)
+load_kits(load_yaml('config/kit_data.yml'))
+load_maps(load_yaml('config/map_data.yml'))
+load_shop_data(load_yaml('config/shop_data.yml'))
+load_map_marker_data(load_yaml('config/map_marker_data.yml'))
 
-def assign_map_marker_team_blue():
-	map_markers.assign_team_to_closest_marker(Team.BLUE)
+register_shop_item_actions()
 
-def spawn_red_nexus():
-	spawn_nexus(Team.RED)
-
-def spawn_blue_nexus():
-	spawn_nexus(Team.BLUE)
-
-def spawn_shop_facing_direction():
-	sb_temp = Scoreboard('pvp.temp', 'dummy')
-	temp_data = Data.storage('pvp:temp')
-
-	as @p at @s:
-		summon marker ~ ~ ~:
-			rotated as @p tp @s ~ ~ ~ ~180 ~
-			sb_temp['#inverted_rotation'] = Data.entity('@s').Rotation[0] * 1000
-			temp_data.facing_angle = Data.cast(sb_temp['#inverted_rotation'], 'float') / 1000
-			kill @s
-
-	spawn_shop(angle_to_cardinal_direction(temp_data.facing_angle))
-
-# [API] dev:give/dev_spawn_egg/{id}
-register_dev_spawn_egg(id='spawn_red_nexus', 				spawn_egg_id='strider_spawn_egg', 		callback=spawn_red_nexus)
-register_dev_spawn_egg(id='spawn_blue_nexus', 				spawn_egg_id='allay_spawn_egg', 		callback=spawn_blue_nexus)
-# register_dev_spawn_egg(id='spawn_shop', 					spawn_egg_id='breeze_spawn_egg', 		callback=spawn_shop_facing_direction)
-
-register_dev_spawn_egg(id='assign_map_marker_team_red', 	spawn_egg_id='strider_spawn_egg',		callback=assign_map_marker_team_red)
-register_dev_spawn_egg(id='assign_map_marker_team_blue', 	spawn_egg_id='allay_spawn_egg',			callback=assign_map_marker_team_blue)
-
-register_dev_spawn_egg(id='spawn_map_marker_generator', 	spawn_egg_id='iron_golem_spawn_egg', 	callback=map_markers.spawn_marker_generator)
-register_dev_spawn_egg(id='spawn_map_marker_inhibitor', 	spawn_egg_id='axolotl_spawn_egg', 		callback=map_markers.spawn_marker_inhibitor)
-register_dev_spawn_egg(id='spawn_map_marker_nexus', 		spawn_egg_id='shulker_spawn_egg', 		callback=map_markers.spawn_marker_nexus)
-register_dev_spawn_egg(id='spawn_map_marker_shop',	 		spawn_egg_id='enderman_spawn_egg', 		callback=map_markers.spawn_marker_shop)
-
-with event_load():
-	# initialize_logger()
-	initialize_util_shulker(0, 0, 0)
-
-	initialize_team(Team.RED)
-	initialize_team(Team.BLUE)
+with events.load():
+	ysb_initialize(0, 0, 0)
+	initialize_teams()
 
 	gamerule commandBlockOutput false
 	gamerule doTileDrops false
@@ -64,24 +42,100 @@ with event_load():
 	gamerule doMobSpawning false
 	gamerule doPatrolSpawning false
 	gamerule doTraderSpawning false
+	gamerule mobGriefing false
 
 	log_chat(LogLevel.INFO, 'Loaded!')
 
-	load_kits(load_yaml('config/kits.yml'))
-	load_maps(load_yaml('config/maps.yml'))
+with events.tick():
+	for team_ in Team.iterate():
+		update_nexus(team_)
+		update_inhibitors(team_)
+		update_generators(team_)
+	
+	update_collectable_coins()
 
-	function dev:test_start_game:
-		start_game_session(map_id='DEV_TEST')
+with events.tick_20():
+	update_inhibitors_20t()
 
-	function dev:test_end_game:
-		end_game_session(map_id='DEV_TEST')
+with events.player_tick():
+	# Shop update logic
+	if entity @e[type=SHOP_ROOT_ENTITY, tag=SHOP_ROOT_TAG, distance=..7]:
+		update_player_shop()
+	unless entity @e[type=SHOP_ROOT_ENTITY, tag=SHOP_ROOT_TAG, distance=..7]:
+		set_player_shop_active_page(ShopPageID.HOME)
 
-with event_tick():
-	for team_id in [Team.RED, Team.BLUE]:
-		as get_nexus_selector(team_id) at @s:
-			update_nexus(team_id)
+	# Coin collection logic
+	player_add_balance(get_player_inventory_coin_cash_amount())
+	clear_player_inventory_all_coins()
 
-with event_player_tick():
-	as get_shop_selector() at @s as @a[distance=..10] at @s:
-		update_user_shop()
+with events.player_opened_ender_chest():
+	set_player_shop_active_page(ShopPageID.HOME)
 
+# >-- Dev Tools Section --<
+
+from pvp:map_markers import
+	spawn_map_marker,
+	assign_team_to_closest_map_marker,
+
+def spawn_map_marker_nexus():
+	spawn_map_marker('NEXUS')
+
+def spawn_map_marker_inhibitor():
+	spawn_map_marker('INHIBITOR')
+
+def spawn_map_marker_generator():
+	spawn_map_marker('GENERATOR')
+
+def spawn_map_marker_shop():
+	spawn_map_marker('SHOP')
+
+def assign_map_marker_team_red():
+	assign_team_to_closest_map_marker(Team.RED)
+
+def assign_map_marker_team_blue():
+	assign_team_to_closest_map_marker(Team.BLUE)
+
+register_dev_spawn_egg(id='assign_map_marker_team_red', spawn_egg_id='strider_spawn_egg', callback=assign_map_marker_team_red)
+register_dev_spawn_egg(id='assign_map_marker_team_blue', spawn_egg_id='allay_spawn_egg', callback=assign_map_marker_team_blue)
+
+register_dev_spawn_egg(id='spawn_map_marker_nexus', spawn_egg_id='shulker_spawn_egg', callback=spawn_map_marker_nexus)
+register_dev_spawn_egg(id='spawn_map_marker_inhibitor', spawn_egg_id='axolotl_spawn_egg', callback=spawn_map_marker_inhibitor)
+register_dev_spawn_egg(id='spawn_map_marker_generator', spawn_egg_id='iron_golem_spawn_egg', callback=spawn_map_marker_generator)
+register_dev_spawn_egg(id='spawn_map_marker_shop', spawn_egg_id='enderman_spawn_egg', callback=spawn_map_marker_shop)
+
+# >-- Dev Test Section --<
+
+from pvp:kits import give_kit
+from pvp:teams import join_team, leave_team
+from pvp:maps import initialize_map, reset_map
+
+function dev:teams/join_team_red:
+	join_team('@s', Team.RED)
+
+function dev:teams/join_team_blue:
+	join_team('@s', Team.BLUE)
+
+function dev:teams/leave_team:
+	leave_team('@s')
+
+function dev:kits/give_basic:
+	give_kit('@s', 'BASIC')
+
+function dev:kits/give_santas_favorite:
+	give_kit('@s', 'SANTAS_FAVORITE')
+
+function dev:maps/initialize_koirat_map_0:
+	initialize_map('KOIRAT_MAP_0')
+
+function dev:maps/reset_koirat_map_0:
+	reset_map('KOIRAT_MAP_0')
+
+function dev:tests/spawn_explosion:
+	anchored eyes positioned ^ ^ ^3:
+		summon creeper ~ ~100 ~ {Fuse: 0s}:
+			positioned ~ ~-100 ~:
+				tp @s ~ ~ ~
+				particle minecraft:explosion_emitter ~ ~ ~ 0 0 0 0 1 force
+
+function minecraft:plat:
+	setblock ~ ~-1 ~ glass

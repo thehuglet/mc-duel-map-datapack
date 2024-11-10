@@ -1,2 +1,0 @@
-# Upgrade to Stone Sword
-{id:"minecraft:stone_sword",count:1,components:{"minecraft:custom_name":'[{"color":"gray","text":"Upgrade to "},"Stone Sword"]'}}

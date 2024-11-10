@@ -1,0 +1,15 @@
+map_marker_data:
+  NEXUS:
+    head_block_id: minecraft:spawner
+    require_team: true
+  INHIBITOR:
+    head_block_id: minecraft:white_stained_glass
+    require_team: true
+  GENERATOR:
+    head_block_id: minecraft:iron_block
+    require_team: true
+  SHOP:
+    head_block_id: minecraft:ender_chest
+    require_team: false
+
+

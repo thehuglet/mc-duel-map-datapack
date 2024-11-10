@@ -1,0 +1,40 @@
+
+
+class LogLevel:
+	INFO = 0
+	WARN = 1
+	ERROR = 2
+
+log_level_colors: dict[LogLevel, str] = {
+	LogLevel.INFO: 		'gray',
+	LogLevel.WARN: 		'yellow',
+	LogLevel.ERROR: 	'red',
+}
+
+log_level_prefixes: dict[LogLevel, str] = {
+	LogLevel.INFO: 		'[info]',
+	LogLevel.WARN: 		'[warn]',
+	LogLevel.ERROR: 	'[error]',
+}
+
+def log_chat(log_level: LogLevel, *segments):
+	separator = {'text': ' '}
+	message_prefix = log_level_prefixes[log_level]
+	message_color = log_level_colors[log_level]
+	message: list[dict[str, str]] = []
+
+	message.append({'text': message_prefix, 'color': message_color})
+	message.append(separator)
+		
+	for segment_count, segment in enumerate(segments):
+		if segment_count > 0:
+			message.append(separator)
+
+		if segment[0] == '@':		
+			message.append({'text': '('})
+			message.append({'selector': segment})
+			message.append({'text': ')'})
+		else:
+			message.append({'text': segment})
+
+	tellraw @a message

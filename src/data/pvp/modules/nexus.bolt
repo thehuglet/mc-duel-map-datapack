@@ -1,79 +1,57 @@
-from mecha import AstSelector
-from pvp:teams import Team, get_team_color_id, get_team_name
-from tools:entity_link import mark_as_parent, link_to_last_parent, get_parent, get_children
-# from ./utils import common_bool, store, parse_selector
-from tools:logger import log_chat, LogLevel
-# import ./events as events
+from pvp:teams import Team, generate_team_object_tag, TEAM_COLOR_IDS
+from tools:entity_link import get_children_entities, link_entities
+from pvp:utils import default_block_display_data, default_game_object_text_display
 
-NEXUS_ROOT_TAG = 'pvp.nexus.root'
+NEXUS_ROOT_TAG = 'pvp.nexus.nexus_root'
+NEXUS_ROOT_ENTITY = 'minecraft:marker'
 NEXUS_BLOCK_ID = 'minecraft:spawner'
 
-NEXUS_COLOR_OVERLAY_TAG = 'pvp.nexus.color_overlay'
+_NEXUS_COLOR_OVERLAY_TAG = 'pvp.nexus.nexus_color_overlay'
 
-def update_nexus(team_id: Team):
-	"""Assumes @s as the nexus root."""
-
-	at @s:
-		# Prevents accidental egg-right-clicks on the spawner
-		data modify block ~ ~ ~ SpawnData.entity set value {}
-
+def update_nexus(team_: Team):
+	as @e[type=NEXUS_ROOT_ENTITY, tag=NEXUS_ROOT_TAG, tag=generate_team_object_tag(team_)] at @s:
 		unless block ~ ~ ~ NEXUS_BLOCK_ID:
-			despawn_nexus()
+			despawn_nexus('@s')
 			log_chat(LogLevel.INFO, '@s', 'destroyed!')
 
-		# VFX
-		# TODO: add vfx to nexus
+		# Prevents accidental dev-rightclicks with spawn eggs
+		data modify block ~ ~ ~ SpawnData.entity set value {}
 
-def despawn_nexus():
-	"""Assumes @s as the nexus root."""
+def despawn_nexus(selector_: str):
+	as selector(selector_) at @s:
+		setblock ~ ~ ~ air
 
-	setblock ~ ~ ~ air
-
-	as get_children():
+		as selector(get_children_entities('@s')):
+			# log_chat(LogLevel.INFO, 'despawned nexus child', '@s')
+			kill @s
+		
+		breakpoint()
 		kill @s
-	kill @s
+		breakpoint()
 
-def spawn_nexus(team_id: Team, auto_link_last_parent=false):
-	def get_color_overlay_block_display_data(color_id: str) -> dict:
-		return {
-			'CustomName': f'{{"color": "{team_color_id}", "text": "Nexus Color Overlay"}}',
-			'Tags': [NEXUS_COLOR_OVERLAY_TAG, nexus_team_tag],
-			'block_state': {'Name': f'{color_id}_stained_glass'},
-			'transformation': {
-				'translation': [-0.500005, -0.500005, -0.500005],
-				'left_rotation': [0, 0, 0, 1],
-				'scale': [1.0001, 1.0001, 1.0001],
-				'right_rotation': [0, 0, 0, 1]
-			},
-			'teleport_duration': 4
-		}
+def spawn_nexus(team_: Team):
+	team_color_id = TEAM_COLOR_IDS[team_]
+	temp_link_helper_tag = 'pvp.nexus.link_parent'
 
-	team_color_id = get_team_color_id(team_id)
-	nexus_team_tag = generate_nexus_team_tag(team_id)
+	summon NEXUS_ROOT_ENTITY ~ ~ ~ {
+		Tags: [
+			NEXUS_ROOT_TAG,
+			generate_team_object_tag(team_),
+			temp_link_helper_tag
+		],
+		CustomName: f'{{"color": "{team_color_id}", "text": "nexus"}}'
+	}
 
-	# Nexus root
-	summon minecraft:marker ~ ~ ~ {
-		CustomName: f'{{"color": "{team_color_id}", "text": "Nexus"}}',
-		Tags: [NEXUS_ROOT_TAG, nexus_team_tag]
-	}:
-		mark_as_parent()
-
-	# Breakable block
 	setblock ~ ~ ~ NEXUS_BLOCK_ID
 
-	# Color Overlay
-	summon block_display ~ ~0.5 ~ get_color_overlay_block_display_data(team_color_id):
-		link_to_last_parent()
+	summon text_display ~ ~1.3 ~ default_game_object_text_display('Nexus', team_color_id):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
 
-def get_nexus_selector(team_id: Team | None = None) -> AstSelector:
-	if team_id == None:
-		return selector(f'@e[type=marker, tag={NEXUS_ROOT_TAG}]')
+	summon block_display ~ ~0.5 ~ default_block_display_data(f'{team_color_id}_stained_glass', scale=1.001):
+		tag @s add generate_team_object_tag(team_)
+		link_entities(parent=f'@n[tag={temp_link_helper_tag}]', child='@s')
 
-	nexus_team_tag = generate_nexus_team_tag(team_id)
-	return selector(f'@e[type=marker, tag={NEXUS_ROOT_TAG}, tag={nexus_team_tag}]')
+	tag @n[tag=temp_link_helper_tag] remove temp_link_helper_tag
 
-def get_nearest_nexus_selector() -> AstSelector:
-	return selector(f'@n[type=marker, tag={NEXUS_ROOT_TAG}]')
 
-def generate_nexus_team_tag(team_id: Team) -> str:
-	return f'pvp.nexus.team.{get_team_name(team_id)}'

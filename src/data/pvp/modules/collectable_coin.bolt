@@ -1,0 +1,59 @@
+from bolt_expressions import ScoreSource, Data
+from nbtlib import Byte, Double
+import tools:math as math
+
+class CoinType(Enum):
+	SMALL_COIN = 0
+
+COIN_NBT_TAG = 'pvp.coin.coin'
+COIN_ITEM_AIR_TOGGLE_TAG = 'pvp.coin.air_toggle'
+
+COIN_TYPE_NBT_TAG: dict[CoinType, str] = {
+	CoinType.SMALL_COIN: 'pvp.coin.type.small_coin'
+}
+COIN_WORTH_VALUES: dict[CoinType, int] = {
+	CoinType.SMALL_COIN: 1
+}
+
+def update_collectable_coins():
+	as @e[type=item, tag=COIN_ITEM_AIR_TOGGLE_TAG]:
+		if data entity @s {OnGround: 1b}:
+			tag @s remove COIN_ITEM_AIR_TOGGLE_TAG
+		
+		# this.Air 
+		gametime = score_var()
+		store result score var gametime:
+			time query gametime
+
+		this.Air = gametime
+
+def spawn_coin(coin_type: CoinType, coin_count: int = 1):
+	summon item ~ ~ ~ {Item: {id: "minecraft:iron_nugget", count: Byte(coin_count), components:{max_stack_size: 1}}, Tags: [COIN_ITEM_AIR_TOGGLE_TAG]}:
+		custom_data = {
+			COIN_NBT_TAG: Byte(1),
+			COIN_TYPE_NBT_TAG[coin_type]: Byte(1)
+		}
+		
+		this.Item.components."minecraft:custom_data" = custom_data
+
+		new_motion = data_var([Double(0.0), Double(0.0), Double(0.0)])
+
+		max_horizontal_motion = 250
+		new_motion[0] = (Data.cast(math.random(-max_horizontal_motion, max_horizontal_motion) / 10000, 'double'))
+		new_motion[2] = (Data.cast(math.random(-max_horizontal_motion, max_horizontal_motion) / 10000, 'double'))
+		this.Motion = new_motion
+
+def get_player_inventory_coin_cash_amount() -> ScoreSource:
+	small_coin_cash_amount = _get_coin_count(COIN_TYPE_NBT_TAG[CoinType.SMALL_COIN]) * COIN_WORTH_VALUES[CoinType.SMALL_COIN]
+
+	total_cash_amount = score_var(small_coin_cash_amount)
+	return total_cash_amount
+
+def _get_coin_count(coin_nbt_tag: str) -> ScoreSource:
+	coin_count = score_var()
+	store result score var coin_count:
+		raw f'clear @s *[minecraft:custom_data~{{{coin_nbt_tag}: 1b}}] 0'
+	return coin_count
+
+def clear_player_inventory_all_coins():
+	raw f'clear @s *[minecraft:custom_data~{{{COIN_NBT_TAG}: 1b}}]'

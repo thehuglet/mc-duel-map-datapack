@@ -1,9 +1,0 @@
-from tools:bolt_exceptions import throw_exception
-from tools:bolt_enum import BoltEnum
-from tools:summon import summon
-from tools:selector import selector
-from tools:bolt_expressions_extras import this, store, score_exists
-from tools:event_handler import
-	event_load,
-	event_tick,
-	event_player_tick,

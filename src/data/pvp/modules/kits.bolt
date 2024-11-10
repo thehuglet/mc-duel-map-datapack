@@ -1,36 +1,34 @@
-from pvp:item_modifiers import ItemModifier
-from tools:util_shulker import
-	util_shulker_set_item,
-	util_shulker_clear_all_items,
-	util_shulker_give_all_items,
-	util_shulker_modify_item,
+from tools:ysb import
+	ysb_set_item,
+	ysb_clear_all_items,
+	ysb_give_all_items,
+	ysb_modify_item,
 from tools:utils import isolate_item_id
+from pvp:item_modifiers import ItemModifier
 
-loaded_kit_ids = []
 loaded_kit_data = {}
 
 def load_kits(raw_data: dict):
 	for kit_id, kit_data in raw_data['kits'].items():
-		loaded_kit_ids.append(kit_id)
 		loaded_kit_data[kit_id] = kit_data
 
-def give_kit(kit_id: str):
+def give_kit(selector_: str, kit_id: str):
 	kit_data = _get_kit_data(kit_id)
 
-	util_shulker_clear_all_items()
+	ysb_clear_all_items()
 
 	for slot_index, item_data in enumerate(kit_data.get('items', [])):
 		count = item_data.get('count', 1)
-		util_shulker_set_item(slot_index, item_data['item'], count)
-		util_shulker_modify_item(slot_index, ItemModifier.ITEM_BASE)
+		ysb_set_item(slot_index, item_data['item'], count)
+		ysb_modify_item(slot_index, ItemModifier.BASE_ITEM.path)
 
 		if isolate_item_id(item_data['item']).endswith('_pickaxe'):
-			util_shulker_modify_item(slot_index, ItemModifier.PICKAXE_BASE)
+			ysb_modify_item(slot_index, ItemModifier.BASE_PICKAXE.path)
 
-	util_shulker_give_all_items('@s')
+	ysb_give_all_items(selector_)
 
 def _get_kit_data(kit_id: str) -> dict:
 	kit_data = loaded_kit_data.get(kit_id)
-	if kit_data == None:
-		throw_exception(f"Received invalid kit ID of '{kit_id}'")
+	if kit_data is None:
+		throw_error(f"Received invalid kit ID of '{kit_id}'")
 	return kit_data

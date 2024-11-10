@@ -1,0 +1,13 @@
+from bolt_expressions import Data, ScoreSource
+from ./var import score_var
+
+this = Data.entity('@s')
+
+def score_exists(score: ScoreSource) -> ScoreSource:
+	return score == score
+
+def score_abs(score: ScoreSource) -> ScoreSource:
+	score_copy = score_var(score)
+	if score_copy < 0:
+		score_copy *= -1
+	return score_copy
