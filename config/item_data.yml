@@ -1,0 +1,76 @@
+#   # Required
+#   item: |
+#     <item>
+#
+#   # Optional
+#   data:
+#     keep_on_death: <bool>
+#     expire_time_sec: <float>
+#
+
+item_data:
+  # Permanent Items
+  PERMANENT_WOODEN_SWORD:
+    item: |
+      wooden_sword
+    custom_attributes:
+      keep_on_death: true
+
+  PERMANENT_STONE_SWORD:
+    item: |
+      stone_sword
+    custom_attributes:
+      keep_on_death: true
+
+  PERMANENT_IRON_SWORD:
+    item: |
+      iron_sword
+    custom_attributes:
+      keep_on_death: true
+
+  # Temporary Items
+  TEMP_STONE_SWORD:
+    item: |
+      stone_sword
+    custom_attributes:
+      expire_time_sec: 120
+
+  TEMP_IRON_SWORD:
+    item: |
+      iron_sword
+    custom_attributes:
+      expire_time_sec: 120
+    
+  TEMP_DIAMOND_SWORD:
+    item: |
+      diamond_sword
+    custom_attributes:
+      expire_time_sec: 120
+
+  # # Pickaxes
+  # P_WOODEN_PICKAXE:
+  #   item: |
+  #     wooden_pickaxe
+  # P_STONE_PICKAXE: |
+  #   item: |
+  #     stone_pickaxe
+  # P_IRON_PICKAXE: |
+  #   item: |
+  #     iron_pickaxe
+
+  # # ==== One Time Buy ====
+  # OTB_STONE_SWORD: |
+  #   stone_sword
+  # OTB_IRON_SWORD: |
+  #   iron_sword
+
+  # # ==== One Time Buy ====
+  # OTB_STONE_SWORD: |
+  #   stone_sword
+  # OTB_IRON_SWORD: |
+  #   iron_sword
+
+
+
+
+

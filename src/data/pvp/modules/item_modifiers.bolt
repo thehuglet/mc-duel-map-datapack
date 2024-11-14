@@ -46,3 +46,13 @@ class ItemModifier(Enum):
 			}
 		]
 	)
+	SET_COMMON_RARITY = EasyItemModifier(
+		[
+			{
+				"function": "minecraft:set_components",
+				"components": {
+					"minecraft:rarity": "common"
+				}
+			}
+		]
+	)

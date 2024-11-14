@@ -115,3 +115,6 @@ def ysb_clear_all_items():
 
 def ysb_give_all_items(selector_raw: str):
 	loot give selector(selector_raw) mine ysb_pos[0] ysb_pos[1] ysb_pos[2] stick[custom_data={drop_contents: 1b}]
+
+def ysb_spawn_all_items(pos: list[str]):
+	loot spawn pos mine ysb_pos[0] ysb_pos[1] ysb_pos[2] stick[custom_data={drop_contents: 1b}]

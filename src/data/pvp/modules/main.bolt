@@ -1,6 +1,7 @@
+from bolt_expressions import Scoreboard
 from nbtlib import Byte
 from pvp:teams import initialize_teams, Team
-from pvp:kits import load_kits
+# from pvp:kits import load_kits
 from pvp:collectable_coin import
 	get_player_inventory_coin_cash_amount,
 	clear_player_inventory_all_coins,
@@ -19,12 +20,14 @@ from pvp:shop import
 from pvp:generator import update_generators
 from pvp:player_balance import player_add_balance
 from pvp:collectable_coin import update_collectable_coins
+from pvp:item import load_item_data, give_item
 from tools:dev_spawn_egg import register_dev_spawn_egg
 from tools:yaml import load_yaml
 from tools:ysb import ysb_initialize
 import tools:events as events
 
-load_kits(load_yaml('config/kit_data.yml'))
+load_item_data(load_yaml('config/item_data.yml'))
+# load_kits(load_yaml('config/kit_data.yml'))
 load_maps(load_yaml('config/map_data.yml'))
 load_shop_data(load_yaml('config/shop_data.yml'))
 load_map_marker_data(load_yaml('config/map_marker_data.yml'))
@@ -43,8 +46,11 @@ with events.load():
 	gamerule doPatrolSpawning false
 	gamerule doTraderSpawning false
 	gamerule mobGriefing false
+	gamerule keepInventory true
 
 	log_chat(LogLevel.INFO, 'Loaded!')
+	execute as @a at @s:
+		playsound minecraft:entity.experience_orb.pickup master @s ~ ~ ~ 0.3 1
 
 with events.tick():
 	for team_ in Team.iterate():
@@ -58,6 +64,10 @@ with events.tick_20():
 	update_inhibitors_20t()
 
 with events.player_tick():
+	# Autoreload util
+	reload_scoreboard = Scoreboard('test')
+	reload_scoreboard['.reload'] = 0
+
 	# Shop update logic
 	if entity @e[type=SHOP_ROOT_ENTITY, tag=SHOP_ROOT_TAG, distance=..7]:
 		update_player_shop()
@@ -105,7 +115,7 @@ register_dev_spawn_egg(id='spawn_map_marker_shop', spawn_egg_id='enderman_spawn_
 
 # >-- Dev Test Section --<
 
-from pvp:kits import give_kit
+# from pvp:kits import give_kit
 from pvp:teams import join_team, leave_team
 from pvp:maps import initialize_map, reset_map
 
@@ -118,11 +128,17 @@ function dev:teams/join_team_blue:
 function dev:teams/leave_team:
 	leave_team('@s')
 
-function dev:kits/give_basic:
-	give_kit('@s', 'BASIC')
+# function dev:item/give_test:
+# 	give_item('@s', 'PERMANENT_WOODEN_SWORD')
+# 	# give_item('@s', 'PERMANENT_STONE_SWORD')
+# 	# give_item('@s', 'TIMED_WOODEN_SWORD')
+# 	# give_item('@s', 'TIMED_STONE_SWORD')
 
-function dev:kits/give_santas_favorite:
-	give_kit('@s', 'SANTAS_FAVORITE')
+# function dev:kits/give_basic:
+# 	give_kit('@s', 'BASIC')
+
+# function dev:kits/give_santas_favorite:
+# 	give_kit('@s', 'SANTAS_FAVORITE')
 
 function dev:maps/initialize_koirat_map_0:
 	initialize_map('KOIRAT_MAP_0')

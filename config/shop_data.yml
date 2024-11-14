@@ -3,7 +3,6 @@ shop_data:
     H:
       item: |
         barrier[custom_name='{"color":"light_purple","italic":false,"text":"Go Back"}']
-      item_count: 1
       action_id: 'set_page_home'
 
   page_data:
@@ -17,52 +16,79 @@ shop_data:
         G:
           item: |
             enchanted_book[custom_name='{"color":"light_purple","italic":false,"text":"Gear Upgrades"}',rarity="common",enchantment_glint_override=false]
-          item_count: 1
           action_id: 'set_page_gear_upgrades'
         O:
           item: |
-            iron_sword[custom_name='{"color":"light_purple","italic":false,"text":"One-Time Gear"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
-          item_count: 1
-          action_id: 'set_page_one_time_gear'
+            iron_sword[custom_name='{"color":"light_purple","italic":false,"text":"Temporary Goods"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          action_id: 'set_page_temporary_goods'
         R:
           item: |
             iron_ingot[custom_name='{"color":"light_purple","italic":false,"text":"Resource Upgrades"}']
-          item_count: 1
           action_id: 'set_page_resource_upgrades'
         B:
           item: |
             <TEAM_COLOR>_concrete[custom_name='{"color":"light_purple","italic":false,"text":"Blocks"}']
-          item_count: 1
           action_id: 'set_page_blocks'
         C:
           item: |
             potion[potion_contents={potion:"minecraft:healing"},hide_additional_tooltip={},custom_name='{"color":"light_purple","italic":false,"text":"Consumables"}']
-          item_count: 1
           action_id: 'set_page_consumables'
 
     GEAR_UPGRADES:
       slots_pattern: |
-        _ _ _ _ _ _ _ _ _
-        _ _ _ _ _ _ _ _ _
-        _ _ _ _ _ _ _ _ H
-
-    ONE_TIME_GEAR:
-      slots_pattern: |
-        S I _ _ _ _ _ _ _
+        S _ _ _ _ _ _ _ _
         _ _ _ _ _ _ _ _ _
         _ _ _ _ _ _ _ _ H
 
       slots_pattern_data:
+        S: 
+          item: |
+            <CURRENT_SWORD_TIER_ITEM>
+          action_id: 'upgrade_gear_sword_tier'
+
+    TEMPORARY_GOODS:
+      slots_pattern: |
+        S A _ _ _ _ _ _ _
+        I B _ _ _ _ _ _ _
+        D C _ _ _ _ _ _ H
+
+      slots_pattern_data:
         S:
           item: |
-            stone_sword[custom_name='{"color":"white","italic":false,"text":"Stone Sword"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+            stone_sword[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
           item_count: 1
-          action_id: 'buy_one_time_stone_sword'
+          price: 15
+          action_id: 'buy_temp_stone_sword'
         I:
           item: |
-            iron_sword[custom_name='{"color":"white","italic":false,"text":"Iron Sword"}',attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+            iron_sword[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
           item_count: 1
-          action_id: 'buy_one_time_iron_sword'
+          price: 30
+          action_id: 'buy_temp_iron_sword'
+        D:
+          item: |
+            diamond_sword[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          price: 60
+          action_id: 'buy_temp_diamond_sword'
+        A:
+          item: |
+            chainmail_chestplate[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          price: 15
+          action_id: 'buy_temp_chainmail_armor'
+        B:
+          item: |
+            iron_chestplate[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          price: 30
+          action_id: 'buy_temp_iron_armor'
+        C:
+          item: |
+            diamond_chestplate[attribute_modifiers={modifiers:[],show_in_tooltip:false}]
+          item_count: 1
+          price: 60
+          action_id: 'buy_temp_diamond_armor'
 
     RESOURCE_UPGRADES:
       slots_pattern: |

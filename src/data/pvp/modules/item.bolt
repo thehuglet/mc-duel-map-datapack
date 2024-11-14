@@ -1,0 +1,67 @@
+from typing import Any
+from pvp:item_modifiers import ItemModifier
+from tools:ysb import
+	ysb_set_item,
+	ysb_clear_all_items,
+	ysb_give_all_items,
+	ysb_spawn_all_items,
+	ysb_get_block_data,
+	ysb_modify_item,
+from tools:utils import isolate_item_id
+
+class CustomItemAttribute(Enum):
+	KEEP_ON_DEATH = 'pvp.item.custom_attribute.keep_on_death'
+	EXPIRE_TIME_TICKS = 'pvp.item.custom_attribute.expire_time'
+
+loaded_item_data = {}
+
+def give_item(item_id: str):
+	item_entry = _get_item_data(item_id)
+	mc_item = item_entry['item'].rstrip("\n")
+	custom_item_attributes = item_entry.get('custom_attributes') or {}
+
+	ysb_clear_all_items()
+	ysb_set_item(0, mc_item)
+
+	item_components = ysb_get_block_data().Items[0].components
+	item_custom_data = item_components.'minecraft:custom_data'
+
+	item_custom_data[CustomItemAttribute.KEEP_ON_DEATH] = custom_item_attributes.get('keep_on_death', false)
+	item_custom_data[CustomItemAttribute.EXPIRE_TIME_TICKS] = custom_item_attributes.get('expire_time_sec', 0) * 20
+
+	ysb_modify_item(0, ItemModifier.BASE_ITEM.path)
+
+	if isolate_item_id(mc_item).endswith('_pickaxe'):
+		ysb_modify_item(0, ItemModifier.BASE_PICKAXE.path)
+
+	if custom_item_attributes.get('expire_time_sec', 0) > 0:
+		# Allows timed item to be damaged so we
+		# can use the durability bar as a timer
+		#
+		# We remove the component as the BASE_ITEM
+		# modifier always adds unbreakable to items
+		item_components.remove('minecraft:unbreakable')
+
+	# print(custom_item_attributes.get('expire_time_sec', 0))
+	# print(custom_item_attributes.get('expire_time_sec', 0))
+	# if _dict_contains(custom_item_attributes, 'keep_on_death', bool):
+	# 	print('yes!!!')
+	# if _dict_contains(custom_item_attributes, 'expire_time_sec', float | int):
+	# 	print('aaaaaaa')
+	if len(this.Inventory) == 36:
+		ysb_spawn_all_items(['~', '~', '~'])
+	else:
+		ysb_give_all_items('@s')
+
+def load_item_data(raw_data: dict):
+	for item_id, item_data in raw_data['item_data'].items():
+		loaded_item_data[item_id] = item_data
+
+def _get_item_data(item_id: str) -> dict:
+	item_data = loaded_item_data.get(item_id)
+	if item_data is None:
+		throw_error(f"Received invalid item ID of '{item_id}'")
+	return item_data
+
+def _dict_contains(target_dict: dict[str, Any], key: str, expected_type: Any):
+	return key in target_dict and isinstance(target_dict[key], expected_type)

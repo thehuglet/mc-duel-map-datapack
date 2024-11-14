@@ -24,6 +24,9 @@ def initialize_teams():
 		team add team_id {"text": team_id, "color": team_color_id}
 		raw f'team modify {team_id} color {team_color_id}'
 
+def get_team_color_id(team: Team) -> MinecraftColorID:
+	return TEAM_COLOR_IDS[team]
+
 def generate_team_object_tag(team_: Team) -> str:
 	return f'pvp.teams.team_object.{team_}'
 
